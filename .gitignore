@@ -1,2 +1,5 @@
-env/*
+5g_venv/*
 .ipynb_checkpoints
+Data/*
+
+!Data/.gitkeep
