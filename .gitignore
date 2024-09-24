@@ -9,7 +9,7 @@ Results/__pycache__/*
 __pycache__
 scripts/models/__pycache__
 scripts/__pychache__
-.idea
+../.idea
 scripts/Results/*
 scripts/Results_norm/*
 Results_norm
