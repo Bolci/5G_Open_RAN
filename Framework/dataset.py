@@ -9,30 +9,46 @@ import numpy as np
 
 
 class OpenRANDatasetV2(Dataset):
-    def __init__(self, data_path: str, convert_to_dB: bool = False):
-        self.data_path = data_path
-        self.data = self.load_data()
-        if convert_to_dB:
-            self.data = self.to_dB(self.data)
+    def __init__(
+        self,
+        data: torch.Tensor,
+        label: torch.Tensor,
+        convert_to_dB: bool = True,
+    ):
+        """
+        Custom dataset class for OpenRAN data.
+        Args:
+            data_path: Path to the folder containing the data in a .pt file.
+            label: Label for the data
+            convert_to_dB: Convert the complex data to dB.
+        """
 
-    def load_data(self):
-        try:
-            data = torch.load(self.data_path, weights_only=True)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"File {self.data_path} not found")
-        return data
+        self.data = self.to_dB(data) if convert_to_dB else data
+
+        self.convert_to_dB = convert_to_dB
+        self.label = label
+
+    # def load_data(self):
+    # # Load data from file
+    # try:
+    #     self.data = torch.load(self.data_path, weights_only=True)
+    #     self.data = self.to_dB(self.data) if self.convert_to_dB else self.data
+    # except FileNotFoundError:
+    #     raise FileNotFoundError(f"File {self.data_path} not found")
 
     @staticmethod
     def to_dB(data: torch.Tensor) -> torch.Tensor:
+        # convert complex data to dB
         return -20 * torch.log10(torch.abs(data))
 
     def __len__(self):
-        return self.data.shape[1]
+        return self.data.shape[-1]
 
     def __getitem__(self, idx):
-        return self.data[:, idx]
+        return self.data[:, idx], self.label[idx]
 
     def to(self, device):
+        # Move data to device
         self.data = self.data.to(device)
 
 
@@ -44,10 +60,12 @@ class OpenRANDatasetV1(Dataset):
         loader_f: Callable = lambda x: np.load(x),
         transform: transforms = None,
         label_to_one_hot=False,
+        normalize=False,
     ):
         self.data_path = data_path
         self.data_names = os.listdir(data_path)
         self.label = label
+        self.normalize = normalize
 
         self.transform = transform
         self.loader_function = loader_f
@@ -63,13 +81,22 @@ class OpenRANDatasetV1(Dataset):
 
         label = np.array([self.label] * loaded_data.shape[1])
         if self.transform:
-            data = self.transform(loaded_data)
+            loaded_data = self.transform(loaded_data)
+        if self.normalize:
+            v_min, v_max = loaded_data.min(), loaded_data.max()
+            new_min, new_max = 0.0, 1.0
+            loaded_data = (loaded_data - v_min) / (v_max - v_min) * (
+                new_max - new_min
+            ) + new_min
 
-        v_min, v_max = loaded_data.min(), loaded_data.max()
-        new_min, new_max = 0.0, 1.0
-        loaded_data = (loaded_data - v_min) / (v_max - v_min) * (
-            new_max - new_min
-        ) + new_min
-
-        # label = torch.Tensor(label)
         return loaded_data, loaded_data
+
+
+if __name__ == "__main__":
+    # Test the dataset class
+    x = OpenRANDatasetV2(
+        "../Data_selection/Fake_Bts_PCI_12/channel_responses.pt",
+        "commercial",
+        True,
+    )
+    print(x)
