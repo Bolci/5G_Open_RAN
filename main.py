@@ -1,21 +1,25 @@
 # Place to work on the optimization of the model
 
 from Framework.utils.utils import load_json_as_dict
+from Framework.data_workers.data_preprocessor import DataPreprocessor
+from Framework.data_workers.data_path_worker import get_all_paths
 import os
+
+import numpy as np
 
 
 def main(path, *args):
 
-    # Load dataset here
-    data_train_path = os.path.join(path["Data_path"], path["Train_folders"])
-    data_test_folder_path = os.path.join(path["Data_path"], path["Test_folders"])
-    data_valid_folder_path = os.path.join(path["Data_path"], path["Valid_folders"])
+    # Dataset_paths
+    all_paths = get_all_paths(path)
 
-    testing_folders = os.listdir(data_test_folder_path)
-    valid_folders = os.listdir(data_valid_folder_path)
+    data_preprocessor = DataPreprocessor()
+    data_preprocessor.set_cache_path(path["Data_cache_path"])
+    data_preprocessor.set_original_seg(path["True_sequence_path"])
+    data_preprocessor.preprocess_data(all_paths)
+
 
     '''
-    
 
     # Data to device
     train_set.to(args.device)
