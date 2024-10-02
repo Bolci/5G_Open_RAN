@@ -37,9 +37,7 @@ class DatasetTemplate(Dataset):
 
         loaded_data = loaded_data.T
 
-        label = np.array([self.label] * loaded_data.shape[1])
-
-
+        #label = np.array([self.label] * loaded_data.shape[1])
         # v_min, v_max = loaded_data.min(), loaded_data.max()
         # new_min, new_max = 0.0, 1.0
         # loaded_data = (loaded_data - v_min)/(v_max - v_min)*(new_max - new_min) + new_min

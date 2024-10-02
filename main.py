@@ -1,28 +1,21 @@
 # Place to work on the optimization of the model
 
-from Framework.dataset import DatasetTemplate
-from Framework.loops import train, validate
-from Framework.metrics import RMSELoss
-from Model_bank.autoencoder_cnn import AEFC
-import argparse
-import torch
+from Framework.utils.utils import load_json_as_dict
 import os
-#import wandb
 
 
-def run(args):
+def main(path, *args):
 
     # Load dataset here
+    data_train_path = os.path.join(path["Data_path"], path["Train_folders"])
+    data_test_folder_path = os.path.join(path["Data_path"], path["Test_folders"])
+    data_valid_folder_path = os.path.join(path["Data_path"], path["Valid_folders"])
 
-    path_data_main = "Data_abs_only"
-
-    data_train_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/train/comeretial"
-    data_test_folder_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/test"
-    data_valid_folder_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/valid"
-
-    '''
     testing_folders = os.listdir(data_test_folder_path)
     valid_folders = os.listdir(data_valid_folder_path)
+
+    '''
+    
 
     # Data to device
     train_set.to(args.device)
@@ -69,6 +62,11 @@ def run(args):
 
 
 if __name__ == "__main__":
+
+    #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
+    paths_config = load_json_as_dict('./data_paths.json')
+    print(paths_config)
+    '''
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
         "--epochs", type=int, default=1000, help="Number of epochs"
@@ -84,4 +82,5 @@ if __name__ == "__main__":
         "--log_interval", type=int, default=1, help="Log interval"
     )
     args = parser.parse_args()
-    run(args)
+    '''
+    main(paths_config)
