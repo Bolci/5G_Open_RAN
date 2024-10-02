@@ -1,22 +1,28 @@
 # Place to work on the optimization of the model
 
-from Framework.dataset import OpenRANDatasetV2
+from Framework.dataset import DatasetTemplate
 from Framework.loops import train, validate
 from Framework.metrics import RMSELoss
 from Model_bank.autoencoder_cnn import AEFC
 import argparse
 import torch
+import os
+#import wandb
 
 
 def run(args):
 
     # Load dataset here
-    train_set = OpenRANDatasetV2(
-        "Data_selection/comeretial/channel_responses.pt", convert_to_dB=True
-    )
-    test_sets = OpenRANDatasetV2(
-        "Data_selection/comeretial/channel_responses.pt", convert_to_dB=True
-    )
+
+    path_data_main = "Data_abs_only"
+
+    data_train_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/train/comeretial"
+    data_test_folder_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/test"
+    data_valid_folder_path = f"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/{path_data_main}/Data_channels/valid"
+
+    '''
+    testing_folders = os.listdir(data_test_folder_path)
+    valid_folders = os.listdir(data_valid_folder_path)
 
     # Data to device
     train_set.to(args.device)
@@ -58,6 +64,8 @@ def run(args):
             print(
                 f"Epoch {epoch}: Train loss {train_loss}, Val loss {val_loss}"
             )
+    
+    '''
 
 
 if __name__ == "__main__":

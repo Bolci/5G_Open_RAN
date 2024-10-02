@@ -1,0 +1,8 @@
+{
+  "Data_path": "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Data/Data_raw",
+  "Train_folders": ["comeretial"],
+  "Valid_folders": ["Fake_Bts_PCI_12", "Fake_Bts_PCI_12_wPA"],
+  "Test_folders": ["Fake_Bts_PCI_466", "Fake_Bts_PCI_466_traffic", "Fake_Bts_PCI_466_wPA", "Fake_Bts_PCI_466_wPA_traffic"],
+  "True_sequence_path" : "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Data/rxGridSSBurstIdeal.mat",
+  "Saving_path": "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/scripts/Results/"
+}
