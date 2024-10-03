@@ -2,9 +2,9 @@
 
 import argparse
 from Framework.utils.utils import load_json_as_dict
-from Framework.data_workers.data_preprocessor import DataPreprocessor
-from Framework.data_workers.data_path_worker import get_all_paths
-from Framework.data_workers.data_utils import get_data_loaders, get_datasets
+from Framework.preprocessors.data_preprocessor import DataPreprocessor
+from Framework.preprocessors.data_path_worker import get_all_paths
+from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss
 from Model_bank.autoencoder_fnn import AEFC
 from Model_bank.autoencoder_cnn import CNNAutoencoder
