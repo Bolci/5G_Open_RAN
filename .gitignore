@@ -17,3 +17,5 @@ scripts/Results_norm
 */__pycache__
 wandb/*
 wandb/.gitkeep
+Results/*
+Results/.gitkeep
