@@ -33,5 +33,4 @@ class DatasetTemplate(Dataset):
         loaded_data = self.loader_function(data_path).astype(np.float32)
         loaded_data = loaded_data.T
 
-
         return loaded_data, label

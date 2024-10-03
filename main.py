@@ -1,5 +1,6 @@
 # Place to work on the optimization of the model
 
+import argparse
 from Framework.utils.utils import load_json_as_dict
 from Framework.data_workers.data_preprocessor import DataPreprocessor
 from Framework.data_workers.data_path_worker import get_all_paths
@@ -9,42 +10,23 @@ import os
 import numpy as np
 
 
-def main(path, *args):
+def main(path, args):
 
     # Dataset_paths
     all_paths = get_all_paths(path)
 
+    #Data preparing according to preprocessing
     data_preprocessor = DataPreprocessor()
     data_preprocessor.set_cache_path(path["Data_cache_path"])
     data_preprocessor.set_original_seg(path["True_sequence_path"])
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths, 'abs_only')
+
+    #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
+    dataloaders = get_data_loaders(datasets, args.batch_size)
 
 
     '''
-
-    # Data to device
-    train_set.to(args.device)
-    # test_sets = test_sets.to(args.device)
-
-    # Split dataset for training
-    train_size = int(0.8 * len(train_set))
-    test_size = len(train_set) - train_size
-    train_dataset, test_dataset = torch.utils.data.random_split(
-        train_set, [train_size, test_size]
-    )
-
-    # Load data into dataloader
-    train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=args.batch_size, shuffle=True
-    )
-    val_loader = torch.utils.data.DataLoader(
-        test_dataset, batch_size=args.batch_size, shuffle=False
-    )
-
-    # Additional test sets for thresholding
-    # test_loader = torch.utils.data.DataLoader(test_sets, batch_size=args.batch_size, shuffle=False)
-
     # Load model here
     model = AEFC()
 
@@ -87,4 +69,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(paths_config)
+    main(paths_config, args)
