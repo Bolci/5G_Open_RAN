@@ -17,6 +17,28 @@ class PreprocessorTypes:
         data =  DataPreprocessorFunctions.to_log(data)
         return DataPreprocessorFunctions.split_by_groups_of_n(data, 2)
 
+    @staticmethod
+    def abs_and_phase(original_sequence, raw_data):
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data_abs = np.abs(data)
+        data_abs = DataPreprocessorFunctions.to_log(data_abs)
+        data_abs = DataPreprocessorFunctions.split_by_groups_of_n(data_abs, 2)
+
+        data_phase = np.arctan2(data)
+        data_phase = DataPreprocessorFunctions.split_by_groups_of_n(data_phase, 2)
+
+        return np.concatenate((data_abs, data_phase), axis=1)
+
+    @staticmethod
+    def raw_IQ(original_sequence, raw_data):
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data_real = data.real
+        data_imag = data.imag
+        data_real = DataPreprocessorFunctions.split_by_groups_of_n(data_real, 2)
+        data_imag = DataPreprocessorFunctions.split_by_groups_of_n(data_imag, 2)
+
+        return data_real, data_imag
+
 class DataPreprocessor(PreprocessorTypes):
     def __init__(self):
         super().__init__()

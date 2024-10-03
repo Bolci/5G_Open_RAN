@@ -131,13 +131,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=30, help="Number of epochs"
+        "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.0001, help="Learning rate"
     )
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
