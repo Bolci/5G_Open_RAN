@@ -14,24 +14,23 @@ import torch.nn as nn
 import numpy as np
 
 
-def train_with_hp_setup(datasets, batch_size, learning_rate, no_epochs, device):
+def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device):
     dataloaders = get_data_loaders(datasets, batch_size)
-    model = AEFC()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     criterion = RMSELoss()
-    #criterion_with_reduction = RMSELoss(reduction='none')
 
     model.to(device)
     criterion.to(device)
 
     #do one validation loop to ini everything
-    valid_loss_mean, valid_loss_per_sample = valid_loop(dataloaders['Valid'][0],
+    _, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
 
-    train_loss_mean = []
-    valid_loss_mean = []
+    train_loss_mean_save = []
+    valid_loss_mean_save = []
+    valid_loss_all_save = []
     for epoch in range(no_epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
         train_loss = train_loop(dataloaders['Train'][0],
@@ -40,12 +39,16 @@ def train_with_hp_setup(datasets, batch_size, learning_rate, no_epochs, device):
                                 optimizer,
                                 device=device)
 
-        valid_loss_true, valid_metric_true = valid_loop(dataloaders['Valid'][0],
+        valid_loss_mean, valid_loss_all = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
 
+        train_loss_mean_save.append(train_loss)
+        valid_loss_mean_save.append(valid_loss_mean)
+        valid_loss_all_save.append(valid_loss_all)
 
+    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save
 
 
 
@@ -63,8 +66,10 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
+    model = AEFC()
 
-    train_with_hp_setup(datasets, args.batch_size, args.learning_rate, args.epochs, device)
+    train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save = (
+        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device))
 
 
 
