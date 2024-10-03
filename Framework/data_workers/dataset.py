@@ -12,7 +12,7 @@ class DatasetTemplate(Dataset):
                  data_path: str,
                  label: Optional = 0,
                  loader_f: Callable = lambda x: np.load(x),
-                 label_extraction_f: Callable = lambda x: int(x.split('_')[2].split('=')[:-1])
+                 label_extraction_f: Callable = lambda x: int((x.split('_')[2]).split('=')[1][:-3])
                  ):
 
         self.data_path = data_path
@@ -30,7 +30,7 @@ class DatasetTemplate(Dataset):
         label = self.label_extraction_function(data_name)
 
         data_path = os.path.join(self.data_path, data_name)
-        loaded_data = self.loader_function(data_path).astype(np.float32)
+        loaded_data = self.loader_function(data_path).float()
         loaded_data = loaded_data.T
 
         return loaded_data, label

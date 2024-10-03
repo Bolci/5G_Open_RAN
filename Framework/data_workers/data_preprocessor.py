@@ -71,12 +71,12 @@ class DataPreprocessor(PreprocessorTypes):
 
                 self.counters[data_type] += 1
 
-            break
+
 
 
     def preprocess_data(self, data_paths: dict,
                         preprocessing_type: str,
-                        mix_valid: bool = False,
+                        mix_valid: bool = True,
                         mix_test: bool = True,
                         preprocessing_performed: bool = False) -> dict:
 
