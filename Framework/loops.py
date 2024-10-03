@@ -12,9 +12,9 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
 
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
-        X = X.to(device)
-        pred = model(X)
-        loss = loss_fn(pred, X)
+        X_ = X.to(device)
+        pred = model(X_)
+        loss = loss_fn(pred, X_)
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
@@ -33,15 +33,17 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
 
 def valid_loop(dataloader, model, loss_fn, device="cuda"):
     test_losses_to_print = []
+    test_losses_score = []
 
     with torch.no_grad():
         for X, y in dataloader:
-            X = X.to(device)
-            pred = model(X)
-            test_loss = loss_fn(pred, X).item()
+            X_ = X.to(device)
+            pred = model(X_)
+            test_loss = loss_fn(pred, X_).item()
+            test_losses_score.append(copy(test_loss))
             test_losses_to_print.append([copy(y), copy(test_loss)])
 
-    test_loss_mean = np.mean(np.asarray(test_losses_to_print))
+    test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
 
     return test_loss_mean, test_losses_to_print

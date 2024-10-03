@@ -18,7 +18,6 @@ class DatasetTemplate(Dataset):
         self.data_path = data_path
         self.data_names = os.listdir(data_path)
         self.label = label
-
         self.loader_function = loader_f
         self.label_extraction_function = label_extraction_f
 
@@ -32,5 +31,9 @@ class DatasetTemplate(Dataset):
         data_path = os.path.join(self.data_path, data_name)
         loaded_data = self.loader_function(data_path).float()
         loaded_data = loaded_data.T
+
+        v_min, v_max = loaded_data.min(), loaded_data.max()
+        new_min, new_max = 0.0, 1.0
+        loaded_data = (loaded_data - v_min)/(v_max - v_min)*(new_max - new_min) + new_min
 
         return loaded_data, label

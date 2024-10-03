@@ -1,44 +1,39 @@
+import torch
 import torch.nn as nn
 
 
-class AEFC(nn.Module):
-    """
-    Autoencoder model with fully connected layers.
-    """
+class CNNAutoencoder(nn.Module):
+    def __init__(self, no_channels=2):
+        super(CNNAutoencoder, self).__init__()
+        self.channels = no_channels
+        self.model_name = "CNN_AE"
 
-    def __init__(
-        self,
-    ):
-        super(AEFC, self).__init__()
+        # Encoder: 1D Convolution to reduce the sequence dimension
         self.encoder = nn.Sequential(
-            nn.Linear(72, 64),
-            nn.LeakyReLU(),
-            nn.Linear(64, 56),
-            nn.LeakyReLU(),
-            nn.Linear(56, 48),
-            nn.LeakyReLU(),
-            nn.Linear(48, 40),
-            nn.LeakyReLU(),
-            nn.Linear(40, 32),
-            nn.LeakyReLU(),
-            nn.Linear(32, 24),
-            nn.LeakyReLU(),
+            nn.Conv1d(self.channels, 16, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(True),
+            nn.MaxPool1d(2),
+            nn.Conv1d(16, 32, kernel_size=3, stride=1, padding=1),  # (16, 72) -> (32, 36)
+            nn.ReLU(True),
+            nn.MaxPool1d(2),
+            nn.Conv1d(32, 64, kernel_size=3, stride=1, padding=1),  # (32, 36) -> (64, 18)
+            nn.ReLU(True),
         )
+
+        # Decoder: Upsample back to the original sequence
         self.decoder = nn.Sequential(
-            nn.Linear(24, 32),
-            nn.LeakyReLU(),
-            nn.Linear(32, 40),
-            nn.LeakyReLU(),
-            nn.Linear(40, 48),
-            nn.LeakyReLU(),
-            nn.Linear(48, 56),
-            nn.LeakyReLU(),
-            nn.Linear(56, 64),
-            nn.LeakyReLU(),
-            nn.Linear(64, 72),
+            nn.Upsample(scale_factor=2),
+            nn.ConvTranspose1d(64, 32, kernel_size=3, stride=1, padding=1),  # (64, 18) -> (32, 36)
+            nn.ReLU(True),
+            nn.Upsample(scale_factor=2),
+            nn.ConvTranspose1d(32, 16, kernel_size=3, stride=1, padding=1),  # (32, 36) -> (16, 72)
+            nn.ReLU(True),
+            nn.ConvTranspose1d(16, self.channels, kernel_size=3, stride=1, padding=1),  # (16, 72) -> (2, 144)
+            nn.Sigmoid()
         )
 
     def forward(self, x):
+        # Pass through the encoder and decoder
         x = self.encoder(x)
         x = self.decoder(x)
         return x

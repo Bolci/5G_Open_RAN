@@ -14,6 +14,7 @@ class PreprocessorTypes:
     def abs_only(original_sequence, raw_data):
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data = np.abs(data)
+        data =  DataPreprocessorFunctions.to_log(data)
         return DataPreprocessorFunctions.split_by_groups_of_n(data, 2)
 
 class DataPreprocessor(PreprocessorTypes):
