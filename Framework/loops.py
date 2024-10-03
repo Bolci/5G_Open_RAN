@@ -41,11 +41,11 @@ def valid_loop(dataloader, model, loss_fn, device="cuda"):
             pred = model(X_)
             test_loss = loss_fn(pred, X_).item()
             test_losses_score.append(copy(test_loss))
-            test_losses_to_print.append([copy(y), copy(test_loss)])
+            test_losses_to_print.append([copy(y.item()), copy(test_loss)])
 
     test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
-
+    print(test_losses_to_print)
     return test_loss_mean, test_losses_to_print
 
 
@@ -56,6 +56,6 @@ def test_loop(dataloader, model, loss_fn, device="cuda"):
         for X, y in dataloader:
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X).item()
-            test_losses_to_print.append(([copy(y), copy(test_loss)]))
+            test_losses_to_print.append(([copy(y.item()), copy(test_loss)]))
 
     return test_losses_to_print

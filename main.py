@@ -1,7 +1,7 @@
 # Place to work on the optimization of the model
 
 import argparse
-from Framework.utils.utils import load_json_as_dict
+from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
@@ -9,6 +9,7 @@ from Framework.metrics.metrics import RMSELoss
 from Model_bank.autoencoder_fnn import AEFC
 from Model_bank.autoencoder_cnn import CNNAutoencoder
 from Framework.loops import train_loop, valid_loop, test_loop
+from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -75,13 +76,24 @@ def main(path, args):
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save = (
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device))
 
+    valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
+
+    #preparing saving paths
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
-
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
-    #saving
+    #saving metrics
+    path_training_over_epochs = os.path.join(saving_path, 'train_over_epoch.txt')
+    save_txt(path_training_over_epochs, train_loss_mean_save)
+    path_valid_over_epochs = os.path.join(saving_path, 'valid_over_epoch.txt')
+    save_txt(path_valid_over_epochs, valid_loss_mean_save)
+    path_valid_epochs_labels = os.path.join(saving_path, 'valid_epochs_labels.txt')
+    save_txt(path_valid_epochs_labels, valid_loss_all_save)
+
+
+    #saving loss over epochs
     plt.figure()
     plt.plot(train_loss_mean_save, label='Train')
     plt.plot(valid_loss_mean_save, label='Valid')
@@ -92,9 +104,26 @@ def main(path, args):
     plt.legend()
     plt.savefig(fig_path)
 
+    plt.figure()
+    plt.plot(train_loss_mean_save, label='Train')
+    plt.plot(valid_metrics['Class_0'], label='Valid_class_0')
+    plt.plot(valid_metrics['Class_1'], label='Valid_class_1')
+    fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels.png')
+    plt.xlabel("epochs")
+    plt.ylabel("RMSE")
+    plt.grid()
+    plt.legend()
+    plt.savefig(fig_path)
 
+    #save model
     model_path = os.path.join(saving_path, 'model.pt')
     torch.save(model.state_dict(), model_path)
+
+    #valid_graph
+    sv_path = os.path.join(saving_path, 'valid_graph.png')
+    plot_data_by_labels(valid_loss_all_save, sv_path)
+
+
 
 if __name__ == "__main__":
     #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
@@ -102,13 +131,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs"
+        "--epochs", type=int, default=30, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="Batch size"
+        "--batch_size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.0001, help="Learning rate"
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
