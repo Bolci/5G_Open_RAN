@@ -47,3 +47,19 @@ class DataPreprocessorFunctions:
             all_signals.append(single_signal_res)
 
         return np.asarray(all_signals)
+
+    @staticmethod
+    def split_by_groups_of_n(array_to_mean, len_groups:int = 4):
+        reshaped_array = array_to_mean.reshape(72, array_to_mean.shape[1]//len_groups, len_groups)
+        result = reshaped_array.transpose(1, 0, 2)
+        return np.array(result)
+
+    @staticmethod
+    def mean_by_quaters(array_to_mean):
+        new_arr = []
+        for x in (range(array_to_mean.shape[1] // 4)):
+            new_arr.append(array_to_mean[:, 4 * x:(4 * (x + 1))])
+
+        new_arr = np.mean(np.array(new_arr), axis=0)
+
+        return new_arr

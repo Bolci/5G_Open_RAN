@@ -3,6 +3,7 @@
 from Framework.utils.utils import load_json_as_dict
 from Framework.data_workers.data_preprocessor import DataPreprocessor
 from Framework.data_workers.data_path_worker import get_all_paths
+from Framework.data_workers.data_utils import get_data_loaders, get_datasets
 import os
 
 import numpy as np
@@ -16,7 +17,8 @@ def main(path, *args):
     data_preprocessor = DataPreprocessor()
     data_preprocessor.set_cache_path(path["Data_cache_path"])
     data_preprocessor.set_original_seg(path["True_sequence_path"])
-    data_preprocessor.preprocess_data(all_paths)
+    paths_for_datasets = data_preprocessor.preprocess_data(all_paths, 'abs_only')
+    datasets = get_datasets(paths_for_datasets)
 
 
     '''
@@ -66,11 +68,9 @@ def main(path, *args):
 
 
 if __name__ == "__main__":
-
     #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
     paths_config = load_json_as_dict('./data_paths.json')
-    print(paths_config)
-    '''
+
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
         "--epochs", type=int, default=1000, help="Number of epochs"
@@ -86,5 +86,5 @@ if __name__ == "__main__":
         "--log_interval", type=int, default=1, help="Log interval"
     )
     args = parser.parse_args()
-    '''
+
     main(paths_config)
