@@ -13,8 +13,8 @@ from Framework.postprocessors.postprocessor_functions import plot_data_by_labels
 import os
 import torch
 import matplotlib.pyplot as plt
-import torch.nn as nn
 import numpy as np
+
 
 
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device):
@@ -26,7 +26,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
     criterion.to(device)
 
     #do one validation loop to ini everything
-    _, _ = valid_loop(dataloaders['Valid'][0],
+    _, _, _ = valid_loop(dataloaders['Valid'][0],
                       model,
                       criterion,
                       device=device)
@@ -42,7 +42,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                 optimizer,
                                 device=device)
 
-        valid_loss_mean, valid_loss_all = valid_loop(dataloaders['Valid'][0],
+        valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
@@ -51,7 +51,14 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
 
-    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save
+    _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
+                                                 model,
+                                                 criterion,
+                                                 device=device,
+                                                 is_train=True)
+
+
+    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score
 
 
 
@@ -67,13 +74,13 @@ def main(path, args):
     data_preprocessor.set_original_seg(path["True_sequence_path"])
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           preprocessing_performed = True)
+                                                           rewrite_data = False)
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
     model = CNNAutoencoder()
 
-    train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save = (
+    train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device))
 
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
@@ -81,6 +88,7 @@ def main(path, args):
     #preparing saving paths
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
+
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
@@ -91,6 +99,8 @@ def main(path, args):
     save_txt(path_valid_over_epochs, valid_loss_mean_save)
     path_valid_epochs_labels = os.path.join(saving_path, 'valid_epochs_labels.txt')
     save_txt(path_valid_epochs_labels, valid_loss_all_save)
+    path_train_final_per_batch = os.path.join(saving_path, 'train_final_per_batch.txt')
+    save_txt(path_train_final_per_batch, train_dist_score)
 
 
     #saving loss over epochs
@@ -115,6 +125,17 @@ def main(path, args):
     plt.legend()
     plt.savefig(fig_path)
 
+    plt.figure()
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], train_loss_mean_save[10:], label='Train')
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_0'][10:], label='Valid_class_0')
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_1'][10:], label='Valid_class_1')
+    fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels_zoomed.png')
+    plt.xlabel("epochs")
+    plt.ylabel("RMSE")
+    plt.grid()
+    plt.legend()
+    plt.savefig(fig_path)
+
     #save model
     model_path = os.path.join(saving_path, 'model.pt')
     torch.save(model.state_dict(), model_path)
@@ -131,7 +152,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=100, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size"
@@ -143,7 +164,7 @@ if __name__ == "__main__":
         "--log_interval", type=int, default=1, help="Log interval"
     )
     parser.add_argument(
-        "--preprocesing_type", type=str, default="abs_only", help="Log interval"
+        "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
     )
     args = parser.parse_args()
 

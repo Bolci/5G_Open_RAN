@@ -1,14 +1,13 @@
 import torch
 import torch.nn as nn
+from complexPyTorch.complexLayers import ComplexBatchNorm2d, ComplexConv2d, ComplexLinear
+from complexPyTorch.complexFunctions import complex_relu, complex_max_pool2d
 
 
-class CNNAutoencoder(nn.Module):
-    def __init__(self, no_channels=1):
-        super(CNNAutoencoder, self).__init__()
-        self.channels = no_channels
-        self.model_name = "CNN_AE"
+class AEComplex(nn.Module):
+    def __init__(self):
+        self.model_name = "AE_Complex"
 
-        # Encoder: 1D Convolution to reduce the sequence dimension
         self.encoder = nn.Sequential(
             nn.Conv1d(self.channels, 16, kernel_size=3, stride=1, padding=1),
             nn.ReLU(True),
@@ -32,8 +31,6 @@ class CNNAutoencoder(nn.Module):
             nn.Sigmoid()
         )
 
-    def forward(self, x):
-        # Pass through the encoder and decoder
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+
+def forward(self, x):
+        pass

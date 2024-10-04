@@ -29,7 +29,15 @@ def mean_labels_over_epochs(data):
 
     return {'Epochs': epochs, 'Class_1': class_1_metrics, 'Class_0': class_0_metrics}
 
+def split_score_by_labels(data):
+    data = np.asarray(data)
+    indices_1 = np.where(data[:, 0] == 1)
+    indices_0 = np.where(data[:, 0] == 0)
 
+    class_1 = data[indices_1]
+    class_0 = data[indices_0]
+
+    return class_1, class_0
 
 def plot_data_by_labels(data, saving_path):
 
@@ -45,8 +53,8 @@ def plot_data_by_labels(data, saving_path):
         class_0 = data_per_epoch[indices_0]
         axis_x_0 = get_epochs_axis_x(id_epoch, len(class_0), offset=-0.2)
 
-        plt.plot(axis_x_1, class_1[:,1], 'r')
-        plt.plot(axis_x_0, class_0[:,1], 'b')
+        plt.plot(axis_x_1, class_1[:,1], 'r', alpha=0.1)
+        plt.plot(axis_x_0, class_0[:,1], 'b', alpha=0.1)
 
     plt.grid()
     plt.xlabel('epochs')

@@ -31,7 +31,7 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     return train_loss
 
 
-def valid_loop(dataloader, model, loss_fn, device="cuda"):
+def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
     test_losses_to_print = []
     test_losses_score = []
 
@@ -41,12 +41,14 @@ def valid_loop(dataloader, model, loss_fn, device="cuda"):
             pred = model(X_)
             test_loss = loss_fn(pred, X_).item()
             test_losses_score.append(copy(test_loss))
-            test_losses_to_print.append([copy(y.item()), copy(test_loss)])
+
+            if not is_train:
+                test_losses_to_print.append([copy(y.item()), copy(test_loss)])
 
     test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
     print(test_losses_to_print)
-    return test_loss_mean, test_losses_to_print
+    return test_loss_mean, test_losses_to_print, test_losses_score
 
 
 def test_loop(dataloader, model, loss_fn, device="cuda"):

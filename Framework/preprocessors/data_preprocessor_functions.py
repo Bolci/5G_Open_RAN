@@ -55,10 +55,20 @@ class DataPreprocessorFunctions:
         return np.array(result)
 
     @staticmethod
+    def mean_by_quaters_axis_2(array_to_mean):
+        new_arr = []
+        for x in (range(array_to_mean.shape[1] // 4)):
+            new_arr.append(array_to_mean[:, (4 * x):(4 * (x + 1))])
+        new_arr = np.mean(np.array(new_arr), axis=2)
+        new_arr = new_arr.T
+
+        return new_arr
+
+    @staticmethod
     def mean_by_quaters(array_to_mean):
         new_arr = []
         for x in (range(array_to_mean.shape[1] // 4)):
-            new_arr.append(array_to_mean[:, 4 * x:(4 * (x + 1))])
+            new_arr.append(array_to_mean[:, (4 * x):(4 * (x + 1))])
 
         new_arr = np.mean(np.array(new_arr), axis=0)
 

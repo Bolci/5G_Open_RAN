@@ -1,4 +1,3 @@
-import json
 import scipy.io as sio
 import json
 

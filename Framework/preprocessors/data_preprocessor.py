@@ -1,8 +1,5 @@
-from pstats import func_strip_path
-
 import numpy as np
 import torch
-
 from .data_preprocessor_functions import DataPreprocessorFunctions
 import os
 from ..exceptions.exceptions import DataProcessorException
@@ -15,7 +12,26 @@ class PreprocessorTypes:
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data = np.abs(data)
         data =  DataPreprocessorFunctions.to_log(data)
-        return DataPreprocessorFunctions.split_by_groups_of_n(data, 2)
+        data = DataPreprocessorFunctions.split_by_groups_of_n(data, 2)
+        return data
+
+    @staticmethod
+    def abs_only_by_one(original_sequence, raw_data):
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data = np.abs(data)
+        data = DataPreprocessorFunctions.to_log(data)
+        data = DataPreprocessorFunctions.split_by_groups_of_n(data, 1)
+        return data
+
+    @staticmethod
+    def abs_only_mean_by_group(original_sequence, raw_data):
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data = np.abs(data)
+        data = DataPreprocessorFunctions.to_log(data)
+        data = DataPreprocessorFunctions.mean_by_quaters_axis_2(data)
+        data = data[..., np.newaxis]
+        data = np.transpose(data, (1, 0, 2))
+        return data
 
     @staticmethod
     def abs_and_phase(original_sequence, raw_data):
@@ -39,12 +55,15 @@ class PreprocessorTypes:
 
         return data_real, data_imag
 
+
 class DataPreprocessor(PreprocessorTypes):
     def __init__(self):
         super().__init__()
         self.data_cache_path = None
         self.original_seq = []
-        self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y)}
+        self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y),
+                                       'abs_only_mean_by_group': lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
+                                       'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y)}
         self.counters = {"Train": 0,
                          "Valid": 0,
                          "Test": 0}
@@ -101,7 +120,7 @@ class DataPreprocessor(PreprocessorTypes):
                         preprocessing_type: str,
                         mix_valid: bool = True,
                         mix_test: bool = True,
-                        preprocessing_performed: bool = False) -> dict:
+                        rewrite_data: bool = False) -> dict:
 
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
@@ -125,15 +144,15 @@ class DataPreprocessor(PreprocessorTypes):
                 if not mix_bool:
                     path_data_folder = os.path.join(self.data_cache_path, preprocessing_type, data_type,
                                                     measurement_folder)
-                    full_data_path = self.prepare_saving_path(path_data_folder)
                 else:
                     path_data_folder = os.path.join(self.data_cache_path, preprocessing_type, data_type)
-                    full_data_path = self.prepare_saving_path(path_data_folder)
+
+                full_data_path = self.prepare_saving_path(path_data_folder)
 
                 if not full_data_path in self.paths_for_datasets[data_type]:
                     self.paths_for_datasets[data_type].append(full_data_path)
 
-                if not preprocessing_performed:
+                if rewrite_data:
                     self.preprocess_folder(data_type=data_type,
                                            source_folder_path=single_path,
                                            preprocessing_type=preprocessing_type,
