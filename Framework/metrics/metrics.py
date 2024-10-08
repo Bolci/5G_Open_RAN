@@ -9,3 +9,5 @@ class RMSELoss(nn.Module):
 
     def forward(self, yhat, y):
         return torch.sqrt(self.mse(yhat, y))
+
+

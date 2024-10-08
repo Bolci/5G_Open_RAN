@@ -16,6 +16,6 @@ Results_norm
 scripts/Results_norm
 */__pycache__
 wandb/*
-wandb/.gitkeep
+!wandb/.gitkeep
 Results/*
-Results/.gitkeep
+!Results/.gitkeep

@@ -6,20 +6,23 @@ from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss
-from Model_bank.autoencoder_fnn import AEFC
-from Model_bank.autoencoder_cnn import CNNAutoencoder
-from Framework.loops import train_loop, valid_loop, test_loop
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
+from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
+from Framework.loops import train_loop, valid_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import torch.optim as optim
+import torch.optim.lr_scheduler as lr_scheduler
 
 
 
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device):
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
     criterion = RMSELoss()
 
     model.to(device)
@@ -36,12 +39,19 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
     valid_loss_all_save = []
     for epoch in range(no_epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
+
+        model.train()
         train_loss = train_loop(dataloaders['Train'][0],
                                 model,
                                 criterion,
                                 optimizer,
                                 device=device)
+        before_lr = optimizer.param_groups[0]["lr"]
+        scheduler.step()
+        after_lr = optimizer.param_groups[0]["lr"]
+        print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
+        model.eval()
         valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
@@ -78,7 +88,7 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-    model = CNNAutoencoder()
+    model = CNNAutoencoderV2()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device))
@@ -152,13 +162,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.0001, help="Learning rate"
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
