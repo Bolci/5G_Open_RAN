@@ -14,3 +14,9 @@ scripts/Results/*
 scripts/Results_norm/*
 Results_norm
 scripts/Results_norm
+*/__pycache__
+wandb/*
+!wandb/.gitkeep
+Results/*
+!Results/.gitkeep
+.idea/*
