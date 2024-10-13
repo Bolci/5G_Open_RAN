@@ -100,6 +100,7 @@ class DataPreprocessor(PreprocessorTypes):
                           full_saving_path: str):
 
         all_files = os.listdir(source_folder_path)
+
         for single_file_name in all_files:
             single_file_path = os.path.join(source_folder_path, single_file_name)
             loaded_file = np.load(single_file_path)

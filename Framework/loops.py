@@ -47,7 +47,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
-    print(test_losses_to_print)
+
     return test_loss_mean, test_losses_to_print, test_losses_score
 
 

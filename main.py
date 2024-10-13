@@ -18,7 +18,6 @@ import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
 
-
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device):
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -82,6 +81,7 @@ def main(path, args):
     data_preprocessor = DataPreprocessor()
     data_preprocessor.set_cache_path(path["Data_cache_path"])
     data_preprocessor.set_original_seg(path["True_sequence_path"])
+
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
                                                            rewrite_data = False)
