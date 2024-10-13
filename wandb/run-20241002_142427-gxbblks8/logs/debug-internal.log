@@ -1,0 +1,18 @@
+{"time":"2024-10-02T14:24:27.358279131+02:00","level":"INFO","msg":"using version","core version":"0.18.3"}
+{"time":"2024-10-02T14:24:27.358292807+02:00","level":"INFO","msg":"created symlink","path":"/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/wandb/run-20241002_142427-gxbblks8/logs/debug-core.log"}
+{"time":"2024-10-02T14:24:27.364482945+02:00","level":"ERROR","msg":"dialing: google: could not find default credentials. See https://cloud.google.com/docs/authentication/external/set-up-adc for more information"}
+{"time":"2024-10-02T14:24:27.384363695+02:00","level":"INFO","msg":"created new stream","id":"gxbblks8"}
+{"time":"2024-10-02T14:24:27.384392228+02:00","level":"INFO","msg":"stream: started","id":"gxbblks8"}
+{"time":"2024-10-02T14:24:27.384406675+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:27.384421793+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:27.38443086+02:00","level":"INFO","msg":"sender: started","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:27.773484911+02:00","level":"INFO","msg":"wandb-core","!BADKEY":null}
+{"time":"2024-10-02T14:24:27.77397532+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-02T14:24:27.843357348+02:00","level":"INFO","msg":"stream: closing","id":"gxbblks8"}
+{"time":"2024-10-02T14:24:27.843394517+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-02T14:24:28.286103749+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-02T14:24:31.240246999+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-02T14:24:31.418029611+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:31.41807748+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:31.418089032+02:00","level":"INFO","msg":"sender: closed","stream_id":{"value":"gxbblks8"}}
+{"time":"2024-10-02T14:24:31.418123967+02:00","level":"INFO","msg":"stream: closed","id":"gxbblks8"}

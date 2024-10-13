@@ -1,0 +1,17 @@
+{
+  "os":  "Linux-6.8.0-45-generic-x86_64-with-glibc2.35",
+  "python":  "3.10.12",
+  "startedAt":  "2024-10-02T12:24:27.357482Z",
+  "program":  "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/main.py",
+  "codePath":  "main.py",
+  "git":  {
+    "remote":  "git@github.com:Bolci/5G_Open_RAN.git",
+    "commit":  "e70c5e910d3ccd7cdc14a26d51803041aeefd042"
+  },
+  "email":  "183892@vutbr.cz",
+  "root":  "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN",
+  "host":  "bolci",
+  "username":  "bolci",
+  "executable":  "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/5g_venv/bin/python",
+  "codePathLocal":  "main.py"
+}
