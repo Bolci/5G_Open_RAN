@@ -50,5 +50,3 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     return test_loss_mean, test_losses_to_print, test_losses_score
 
-
-

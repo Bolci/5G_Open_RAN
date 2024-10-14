@@ -156,6 +156,8 @@ def main(path, args):
     wandb.finish()
 
 
+
+
 if __name__ == "__main__":
     #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
     paths_config = load_json_as_dict('./data_paths.json')

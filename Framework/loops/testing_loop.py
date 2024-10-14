@@ -1,4 +1,20 @@
-def test_loop(dataloader_test, model, loss_fn, device="cuda"):
+import os.path
+import torch
+import torch.nn as nn
+from copy import copy
+
+from Framework.postprocessors.postprocesor import Postprocessor
+
+
+def test_loop(dataloader_test,
+              model: nn.Module,
+              loss_fn,
+              postprocessor: Postprocessor,
+              device="cuda"):
+
+
+
+
     test_losses_to_print = []
 
     with torch.no_grad():
