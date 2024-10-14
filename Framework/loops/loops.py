@@ -51,13 +51,4 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
     return test_loss_mean, test_losses_to_print, test_losses_score
 
 
-def test_loop(dataloader, model, loss_fn, device="cuda"):
-    test_losses_to_print = []
 
-    with torch.no_grad():
-        for X, y in dataloader:
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
-            test_losses_to_print.append(([copy(y.item()), copy(test_loss)]))
-
-    return test_losses_to_print

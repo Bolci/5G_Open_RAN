@@ -3,7 +3,6 @@ from Framework.utils.utils import load_txt
 import matplotlib.pyplot as plt
 from Framework.postprocessors.postprocessor_functions import split_score_by_labels
 
-
 path = '/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Results/Try_Preprocessing=abs_only_by_one_sample_no-epochs=100_lr=0.0001_bs=32_model=CNN_AE'
 
 train_final_batch_score = 'train_final_per_batch.txt'
@@ -42,8 +41,6 @@ plt.xlabel('Anomaly Score')
 plt.ylabel('Density')
 plt.legend()
 plt.grid(True)
-
-
 
 
 plt.show()
