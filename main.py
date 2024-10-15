@@ -47,10 +47,10 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                 criterion,
                                 optimizer,
                                 device=device)
-        before_lr = optimizer.param_groups[0]["lr"]
+        # before_lr = optimizer.param_groups[0]["lr"]
         scheduler.step()
-        after_lr = optimizer.param_groups[0]["lr"]
-        print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
+        # after_lr = optimizer.param_groups[0]["lr"]
+        # print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
         model.eval()
         valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
@@ -167,7 +167,7 @@ if __name__ == "__main__":
         "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size"
+        "--batch_size", type=int, default=163420, help="Batch size"
     )
     parser.add_argument(
         "--learning_rate", type=float, default=0.001, help="Learning rate"

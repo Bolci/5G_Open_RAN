@@ -22,10 +22,10 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
 
         train_loss += loss.item()
 
-        if batch % 1000 == 0:
-            loss, current = loss.item(), batch * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-            print()
+        # if batch % 1000 == 0:
+        #     loss, current = loss.item(), batch * len(X)
+        #     print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+        #     print()
 
     train_loss /= num_batches
     return train_loss
@@ -47,7 +47,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
-    print(test_losses_to_print)
+    # print(test_losses_to_print)
     return test_loss_mean, test_losses_to_print, test_losses_score
 
 
