@@ -31,6 +31,7 @@ class DatasetTemplate(Dataset):
         for data_name in self.data_names:
             data_path = os.path.join(self.data_path, data_name)
             loaded_data = self.loader_function(data_path).float()
+            print(loaded_data.shape)
             loaded_data = loaded_data.permute(0, 2, 1)
 
             v_min, v_max = loaded_data.min(dim=-1, keepdim=True).values, loaded_data.max(dim=-1, keepdim=True).values

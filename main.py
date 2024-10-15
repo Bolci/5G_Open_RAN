@@ -85,7 +85,7 @@ def main(path, args):
 
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           rewrite_data = False,
+                                                           rewrite_data = True,
                                                            merge_files = True)
 
     #prepare datasets and data_loaders
