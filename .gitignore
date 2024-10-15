@@ -20,3 +20,4 @@ wandb/*
 Results/*
 !Results/.gitkeep
 .idea/*
+*/.idea
