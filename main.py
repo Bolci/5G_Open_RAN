@@ -95,6 +95,7 @@ def main(path, args):
 
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
 
+
     #preparing saving paths
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
@@ -164,7 +165,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=1, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size"
