@@ -4,6 +4,7 @@ from .data_preprocessor_functions import DataPreprocessorFunctions
 import os
 from ..exceptions.exceptions import DataProcessorException
 from ..utils.utils import load_mat_file
+from pathlib import Path
 
 
 class PreprocessorTypes:
@@ -79,7 +80,8 @@ class DataPreprocessor(PreprocessorTypes):
         self.original_seq = pss_sss_raw
 
     def prepare_saving_path(self, saving_folder_name: str) -> str:
-        full_path = os.path.join(self.data_cache_path, saving_folder_name)
+        # full_path = os.path.join(self.data_cache_path, saving_folder_name)
+        full_path = saving_folder_name
         if not os.path.exists(full_path):
             os.makedirs(full_path)
 
@@ -97,22 +99,41 @@ class DataPreprocessor(PreprocessorTypes):
                           source_folder_path: str,
                           preprocessing_type:str,
                           label: int,
-                          full_saving_path: str):
+                          full_saving_path: str,
+                          merge_files: bool = False) -> None:
 
         all_files = os.listdir(source_folder_path)
+        if merge_files:
+            single_matrix = None
+            for single_file_name in all_files:
+                single_file_path = os.path.join(source_folder_path, single_file_name)
+                loaded_file = np.load(single_file_path)
+                preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
 
-        for single_file_name in all_files:
-            single_file_path = os.path.join(source_folder_path, single_file_name)
-            loaded_file = np.load(single_file_path)
-            preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
+                if single_matrix is None:
+                    single_matrix = preprocessed_data
+                else:
+                    single_matrix = np.concatenate((single_matrix, preprocessed_data), axis=0)
 
-            for single_processed_data in preprocessed_data:
+            file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
+            single_processed_data_torch = torch.Tensor(single_matrix)
+            torch.save(single_processed_data_torch, file_path)
 
-                file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
-                single_processed_data_torch = torch.Tensor(single_processed_data)
-                torch.save(single_processed_data_torch, file_path)
 
-                self.counters[data_type] += 1
+
+        else:
+            for single_file_name in all_files:
+                single_file_path = os.path.join(source_folder_path, single_file_name)
+                loaded_file = np.load(single_file_path)
+                preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
+
+                for single_processed_data in preprocessed_data:
+
+                    file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
+                    single_processed_data_torch = torch.Tensor(single_processed_data)
+                    torch.save(single_processed_data_torch, file_path)
+
+                    self.counters[data_type] += 1
 
 
 
@@ -121,7 +142,8 @@ class DataPreprocessor(PreprocessorTypes):
                         preprocessing_type: str,
                         mix_valid: bool = True,
                         mix_test: bool = True,
-                        rewrite_data: bool = False) -> dict:
+                        rewrite_data: bool = False,
+                        merge_files: bool = False) -> dict:
 
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
@@ -132,7 +154,7 @@ class DataPreprocessor(PreprocessorTypes):
 
         for data_type, list_path in data_paths.items():
             for single_path in list_path:
-                measurement_folder = single_path.split('/')[-1]
+                measurement_folder = Path(single_path).parts[-1]
                 label = self.get_label(measurement_folder)
 
                 mix_bool = False
@@ -158,6 +180,7 @@ class DataPreprocessor(PreprocessorTypes):
                                            source_folder_path=single_path,
                                            preprocessing_type=preprocessing_type,
                                            label=label,
-                                           full_saving_path= full_data_path,)
+                                           full_saving_path= full_data_path,
+                                           merge_files=merge_files)
 
         return self.paths_for_datasets
