@@ -1,5 +1,5 @@
 {
-  "Data_path": "Data_selection",
+  "Data_path": "Data_selection/",
   "Train_folders": "train",
   "Valid_folders": "valid",
   "Test_folders": "test",

@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
+import wandb
 
 
 
@@ -56,7 +57,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                                         model,
                                                         criterion,
                                                         device=device)
-
+        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
@@ -84,7 +85,8 @@ def main(path, args):
     data_preprocessor.set_original_seg(path["True_sequence_path"])
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           rewrite_data = False)
+                                                           rewrite_data = False,
+                                                           merge_files = True)
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
@@ -153,7 +155,7 @@ def main(path, args):
     #valid_graph
     sv_path = os.path.join(saving_path, 'valid_graph.png')
     plot_data_by_labels(valid_loss_all_save, sv_path)
-
+    wandb.finish()
 
 
 if __name__ == "__main__":
@@ -177,5 +179,14 @@ if __name__ == "__main__":
         "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
     )
     args = parser.parse_args()
+
+    # os.environ["WANDB_SILENT"] = "true"
+    wandb.init(
+        project="Anomaly_detection",
+        entity="OPEN_5G_RAN_team",
+        config=vars(parser.parse_args()),
+        mode="online",
+        # tags=[f"NewV{i}.{j}.4"],
+    )
 
     main(paths_config, args)
