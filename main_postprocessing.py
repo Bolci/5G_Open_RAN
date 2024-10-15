@@ -1,6 +1,17 @@
+import os.path
+
 from Framework.postprocessors.postprocesor import Postprocessor
 from Framework.utils.utils import load_json_as_dict
+from Framework.loops.loops import test_loop
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoderV2
+from Framework.metrics.metrics import RMSELoss
+from Framework.preprocessors.data_preprocessor import DataPreprocessor
+from Framework.preprocessors.data_path_worker import get_all_paths
+from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
+import torch
 
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 config_path = 'data_paths.json'
 config = load_json_as_dict(config_path)
@@ -16,9 +27,32 @@ post_processor.set_paths(result_folder_path=config['Saving_path'],
                          valid_score_path_file_name=valid_final_batch_score,
                          train_score_final_file_name = train_final_batch_score)
 
+threshold, classification_score = post_processor.estimate_threshold()
 
-post_processor.estimate_threshold()
 
+
+path = load_json_as_dict('./data_paths.json')
+all_paths = get_all_paths(path)
+data_preprocessor = DataPreprocessor()
+data_preprocessor.set_cache_path(path["Data_cache_path"])
+data_preprocessor.set_original_seg(path["True_sequence_path"])
+
+paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
+                                                       'abs_only_by_one_sample',
+                                                       rewrite_data=False,
+                                                       merge_files=True)
+
+# prepare datasets and data_loaders
+datasets = get_datasets(paths_for_datasets)
+model = CNNAutoencoderV2().to(device)
+PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
+model.load_state_dict(torch.load(PATH))
+model.eval()
+
+criterion = RMSELoss()
+print(F"Estimated th")
+classification_score_test_0, classification_score_test_1 = test_loop(datasets['Test'][0], model, criterion, threshold,device=device)
+print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
 
 '''
 plt.figure()

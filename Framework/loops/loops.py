@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 from copy import copy
+import torch.nn as nn
 
 
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
@@ -50,3 +51,34 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     return test_loss_mean, test_losses_to_print, test_losses_score
 
+def test_loop(dataloader_test,
+              model: nn.Module,
+              loss_fn,
+              threshold: int,
+              device="cuda"):
+
+    test_losses_to_print = []
+
+    no_samples = len(dataloader_test)
+    counter_var_0 = 0
+    counter_var_1 = 0
+
+    with torch.no_grad():
+        for X, y in dataloader_test:
+            if not (len(X.shape) == 3):
+                X = X.unsqueeze(dim=0)
+
+            pred = model(X.to(device))
+            test_loss = loss_fn(pred, X).item()
+
+            if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
+                counter_var_0 +=1
+
+            if (test_loss <= threshold and y.item() == 1) or (test_loss > threshold and y.item() == 0):
+                counter_var_1 +=1
+
+            #test_losses_to_print.append(([copy(y.item()), copy(test_loss)]))
+    classification_score_0 = float(counter_var_0)/float(no_samples)
+    classification_score_1 = float(counter_var_1) / float(no_samples)
+
+    return classification_score_0, classification_score_1

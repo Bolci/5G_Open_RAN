@@ -7,7 +7,7 @@ from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
-from Framework.loops.loops import train_loop, valid_loop
+from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 import os
 import torch
@@ -154,9 +154,14 @@ def main(path, args):
     #valid_graph
     sv_path = os.path.join(saving_path, 'valid_graph.png')
     plot_data_by_labels(valid_loss_all_save, sv_path)
+
+
+    #testing loop
+
+
+
+
     wandb.finish()
-
-
 
 
 if __name__ == "__main__":

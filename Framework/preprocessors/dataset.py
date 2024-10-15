@@ -31,7 +31,6 @@ class DatasetTemplate(Dataset):
         for data_name in self.data_names:
             data_path = os.path.join(self.data_path, data_name)
             loaded_data = self.loader_function(data_path).float()
-            print(loaded_data.shape)
             loaded_data = loaded_data.permute(0, 2, 1)
 
             v_min, v_max = loaded_data.min(dim=-1, keepdim=True).values, loaded_data.max(dim=-1, keepdim=True).values
@@ -76,24 +75,3 @@ class DatasetTemplate(Dataset):
             loaded_data = (loaded_data - v_min)/(v_max - v_min)*(new_max - new_min) + new_min
 
             return loaded_data, label
-
-
-if __name__ == "__main__":
-    # Define dataset parameters
-    data_size = 100  # Size of the dataset
-    batch_size = 10  # Batch size
-
-    # Create the custom dataset
-    dataset = DatasetTemplate(data_size, batch_size)
-
-    # Start the data loading process
-    dataset.start_data_loading()
-
-    # Fetch data in the main process (consumer)
-    for i in range(5):
-        batch_data = dataset[i]  # Get a batch of data
-        print(f"Main process fetched: {batch_data.tolist()}")  # Simulated batch consumption
-        time.sleep(1)  # Simulate time gap between batch consumption
-
-    # Stop the data loading process when done
-    dataset.stop_data_loading()
