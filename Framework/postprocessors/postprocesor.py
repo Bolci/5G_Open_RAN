@@ -92,7 +92,10 @@ class Postprocessor:
         return np.asarray(no_class_all), np.asarray(boundary_scores)
 
 
-    def estimate_threshold_on_valid_data(self, use_epochs:int = 5, no_steps_to_estimate:int = 200, prepare_fig:bool = True):
+    def estimate_threshold_on_valid_data(self, use_epochs:int = 5,
+                                         no_steps_to_estimate:int = 200,
+                                         prepare_fig:bool = True,
+                                         save_fig: bool = True):
         train_scores, valid_scores = self.load_files_final_metrics()
         no_class_all, boundary_scores = self.calculate_values_for_threshold_diagram(valid_scores,
                                                                                     no_steps_to_estimate=no_steps_to_estimate,
@@ -117,6 +120,10 @@ class Postprocessor:
             ax.set_xlabel('Metrics score')
             ax.set_ylabel('Classification score [%]')
 
+            if save_fig:
+                saving_path = os.path.join(self.result_folder_path, 'threshols_estimation_on_validation_data.png')
+                fig.savefig(saving_path)
+
         return threshold, classification_score, fig
 
     def test_data(self,
@@ -124,7 +131,8 @@ class Postprocessor:
                   testing_loop: Callable,
                   use_epochs:int = 5,
                   no_steps_to_estimate:int = 200,
-                  prepare_fig:bool = True):
+                  prepare_fig:bool = True,
+                  save_fig: bool = True):
         classification_score_test_0, classification_score_test_1, predicted_results = testing_loop()
         no_class_all, boundary_scores = self.calculate_values_for_threshold_diagram(predicted_results, no_steps_to_estimate, use_epochs)
         boundary_scores = np.asarray(boundary_scores)
@@ -145,7 +153,9 @@ class Postprocessor:
             ax.set_xlabel('Metrics score')
             ax.set_ylabel('Classification score [%]')
 
+            if save_fig:
+                saving_path = os.path.join(self.result_folder_path, 'threshols_on_testing_data.png')
+                fig.savefig(saving_path)
+
         return classification_score_test_0, classification_score_test_1, predicted_results, fig
 
-    def estimate_PDF(self):
-        pass

@@ -34,8 +34,6 @@ post_processor.set_paths(result_folder_path=config['Saving_path'],
 threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
 
 
-
-
 path = load_json_as_dict('./data_paths.json')
 all_paths = get_all_paths(path)
 data_preprocessor = DataPreprocessor()
@@ -46,27 +44,20 @@ paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                        'abs_only_by_one_sample',
                                                        rewrite_data=False,
                                                        merge_files=True)
-
 # prepare datasets and data_loaders
 datasets = get_datasets(paths_for_datasets)
 model = CNNAutoencoderV2().to(device)
 PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
 model.load_state_dict(torch.load(PATH))
 model.eval()
-
-
 test_dataloader = datasets['Test'][0]
-
 criterion = RMSELoss()
 
 testing_loop = lambda : test_loop(test_dataloader, model, criterion, threshold, device=device)
-
 classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(threshold,
                                                                                                             testing_loop)
-
 print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
 
-plt.show()
 '''
 plt.figure()
 plt.hist(train_scores, bins=15, density=True, alpha=0.5, label='Histogram of Anomaly Scores', color='orange')

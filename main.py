@@ -9,6 +9,7 @@ from Framework.metrics.metrics import RMSELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
+from Framework.postprocessors.postprocesor import Postprocessor
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -17,11 +18,11 @@ import torch.optim.lr_scheduler as lr_scheduler
 import wandb
 
 
-def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device):
+def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
-    criterion = RMSELoss()
+
 
     model.to(device)
     criterion.to(device)
@@ -89,9 +90,10 @@ def main(path, args):
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
     model = CNNAutoencoderV2()
+    criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
-        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device))
+        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
 
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
 
@@ -103,14 +105,20 @@ def main(path, args):
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
+    #file_names
+    train_over_epoch = 'train_over_epoch.txt'
+    valid_over_epoch = 'valid_over_epoch.txt'
+    valid_over_epoch_over_batch_with_labels = 'valid_epochs_labels.txt'
+    train_final_score_per_batch = 'train_final_per_batch.txt'
+
     #saving metrics
-    path_training_over_epochs = os.path.join(saving_path, 'train_over_epoch.txt')
+    path_training_over_epochs = os.path.join(saving_path, train_over_epoch)
     save_txt(path_training_over_epochs, train_loss_mean_save)
-    path_valid_over_epochs = os.path.join(saving_path, 'valid_over_epoch.txt')
+    path_valid_over_epochs = os.path.join(saving_path, valid_over_epoch)
     save_txt(path_valid_over_epochs, valid_loss_mean_save)
-    path_valid_epochs_labels = os.path.join(saving_path, 'valid_epochs_labels.txt')
+    path_valid_epochs_labels = os.path.join(saving_path, valid_over_epoch_over_batch_with_labels)
     save_txt(path_valid_epochs_labels, valid_loss_all_save)
-    path_train_final_per_batch = os.path.join(saving_path, 'train_final_per_batch.txt')
+    path_train_final_per_batch = os.path.join(saving_path, train_final_score_per_batch)
     save_txt(path_train_final_per_batch, train_dist_score)
 
 
@@ -157,9 +165,25 @@ def main(path, args):
 
 
     #testing loop
+    post_processor = Postprocessor()
+    post_processor.set_paths(result_folder_path=path['Saving_path'],
+                             attempt_name=saving_folder_name,
+                             train_score_over_epoch_file_name=train_over_epoch,
+                             valid_score_over_epoch_file_name=valid_over_epoch,
+                             valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
+                             train_score_final_file_name=train_final_score_per_batch)
 
+    threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
+    test_dataloader = datasets['Test'][0]
+    testing_loop = lambda: test_loop(test_dataloader, model, criterion, threshold, device=device)
+    classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(
+        threshold,
+        testing_loop)
+    print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
 
-
+    wandb.log({"Classification_score_valid": classification_score,
+               "classification_score_test": [classification_score_test_0, classification_score_test_1],
+               "Threshold":threshold})
 
     wandb.finish()
 
