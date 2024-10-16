@@ -50,10 +50,18 @@ PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
 model.load_state_dict(torch.load(PATH))
 model.eval()
 
+print(datasets)
+
+test_dataloader = datasets['Test'][0]
+
+
 criterion = RMSELoss()
 print(F"Estimated th")
-classification_score_test_0, classification_score_test_1 = test_loop(datasets['Test'][0], model, criterion, threshold,device=device)
+classification_score_test_0, classification_score_test_1, predicted_results = test_loop(test_dataloader, model, criterion, threshold,device=device)
 print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
+
+print(predicted_results)
+
 
 '''
 plt.figure()

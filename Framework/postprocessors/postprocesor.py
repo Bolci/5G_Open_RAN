@@ -38,15 +38,16 @@ class Postprocessor:
         print(valid_scores)
         return train_scores, valid_scores
 
+
     def load_and_parse_valid_per_batch_per_epoch(self):
         valid_scores = load_txt(self.valid_score_over_epoch_per_batch_file_name)
         valid_scores = mean_labels_over_epochs(valid_scores)
         return valid_scores['Class_0'], valid_scores['Class_1']
 
+
     def load_files_over_epochs(self):
         train_scores = load_txt(self.train_score_over_epoch_full_path)
         valid_scores = load_txt(self.valid_score_over_epoch_full_path)
-
         return train_scores, valid_scores
 
 
@@ -65,6 +66,7 @@ class Postprocessor:
         min_score -= 0.5 * min_score
 
         return min_score, max_score
+
 
     def calculate_values_for_threshold_diagram(self, data, no_steps_to_estimate, use_epochs):
         min_score, max_score = self.get_threshold_limits(use_epochs=use_epochs)

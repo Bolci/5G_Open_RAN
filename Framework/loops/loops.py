@@ -57,7 +57,7 @@ def test_loop(dataloader_test,
               threshold: int,
               device="cuda"):
 
-    test_losses_to_print = []
+    predicted_results = []
 
     no_samples = len(dataloader_test)
     counter_var_0 = 0
@@ -77,8 +77,8 @@ def test_loop(dataloader_test,
             if (test_loss <= threshold and y.item() == 1) or (test_loss > threshold and y.item() == 0):
                 counter_var_1 +=1
 
-            #test_losses_to_print.append(([copy(y.item()), copy(test_loss)]))
+            predicted_results.append(([copy(y.item()), copy(test_loss)]))
     classification_score_0 = float(counter_var_0)/float(no_samples)
     classification_score_1 = float(counter_var_1) / float(no_samples)
 
-    return classification_score_0, classification_score_1
+    return classification_score_0, classification_score_1, predicted_results

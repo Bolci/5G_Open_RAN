@@ -1,3 +1,5 @@
+from calendar import day_abbr
+
 from torch.utils.data import Dataset
 import torch
 from typing import Optional, Callable
@@ -29,6 +31,7 @@ class DatasetTemplate(Dataset):
 
     def load_data(self):
         for data_name in self.data_names:
+
             data_path = os.path.join(self.data_path, data_name)
             loaded_data = self.loader_function(data_path).float()
             loaded_data = loaded_data.permute(0, 2, 1)
@@ -48,6 +51,7 @@ class DatasetTemplate(Dataset):
                 self.labels = torch.cat((self.labels, torch.tensor([label]*len(loaded_data))), dim=0)
         self.data = self.data.to(self.device)
         self.labels = self.labels.to(self.device)
+
 
     def __len__(self):
         if self.load_all_data:

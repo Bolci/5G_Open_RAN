@@ -134,8 +134,6 @@ class DataPreprocessor(PreprocessorTypes):
                     self.counters[data_type] += 1
 
 
-
-
     def preprocess_data(self, data_paths: dict,
                         preprocessing_type: str,
                         mix_valid: bool = True,
@@ -148,7 +146,6 @@ class DataPreprocessor(PreprocessorTypes):
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
-
 
         for data_type, list_path in data_paths.items():
             for single_path in list_path:
