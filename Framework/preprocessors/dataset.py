@@ -44,7 +44,7 @@ class DatasetTemplate(Dataset):
                 self.data = torch.cat((self.data, loaded_data), dim=0)
 
             if self.labels is None:
-                self.labels = torch.tensor([self.label]*len(loaded_data))
+                self.labels = torch.tensor([label]*len(loaded_data))
             else:
                 self.labels = torch.cat((self.labels, torch.tensor([label]*len(loaded_data))), dim=0)
         self.data = self.data.to(self.device)
