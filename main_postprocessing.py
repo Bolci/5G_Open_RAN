@@ -19,16 +19,17 @@ config = load_json_as_dict(config_path)
 post_processor = Postprocessor()
 result_folder_path = 'Try_Preprocessing=abs_only_by_one_sample_no-epochs=50_lr=0.001_bs=32_model=CNN_AE_1'
 train_over_epoch = 'train_over_epoch.txt'
-valid_final_batch_score = 'valid_epochs_labels.txt'
+valid_over_epoch = 'valid_over_epoch.txt'
+valid_score_over_epoch_per_batch_file_name = 'valid_epochs_labels.txt'
 train_final_batch_score = 'train_final_per_batch.txt'
 post_processor.set_paths(result_folder_path=config['Saving_path'],
                          attempt_name=result_folder_path,
-                         train_score_paths_file_name=train_over_epoch,
-                         valid_score_path_file_name=valid_final_batch_score,
-                         train_score_final_file_name = train_final_batch_score)
+                         train_score_over_epoch_file_name=train_over_epoch,
+                         valid_score_over_epoch_file_name=valid_over_epoch,
+                         valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
+                         train_score_final_file_name=train_final_batch_score)
 
 threshold, classification_score = post_processor.estimate_threshold()
-
 
 
 path = load_json_as_dict('./data_paths.json')

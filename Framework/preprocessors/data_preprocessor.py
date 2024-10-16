@@ -119,8 +119,6 @@ class DataPreprocessor(PreprocessorTypes):
             single_processed_data_torch = torch.Tensor(single_matrix)
             torch.save(single_processed_data_torch, file_path)
 
-
-
         else:
             for single_file_name in all_files:
                 single_file_path = os.path.join(source_folder_path, single_file_name)
