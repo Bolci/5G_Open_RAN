@@ -6,6 +6,7 @@ from typing import Optional, Callable
 import os
 import numpy as np
 import time
+from copy import copy
 
 class DatasetTemplate(Dataset):
     def __init__(self,
@@ -40,18 +41,18 @@ class DatasetTemplate(Dataset):
             new_min, new_max = 0.0, 1.0
             loaded_data = (loaded_data - v_min) / (v_max - v_min) * (new_max - new_min) + new_min
             label = self.label_extraction_function(data_name)
+
             if self.data is None:
                 self.data = loaded_data
             else:
                 self.data = torch.cat((self.data, loaded_data), dim=0)
 
             if self.labels is None:
-                self.labels = torch.tensor([self.label]*len(loaded_data))
+                self.labels = torch.tensor([label]*len(loaded_data))
             else:
-                self.labels = torch.cat((self.labels, torch.tensor([label]*len(loaded_data))), dim=0)
+                self.labels = torch.cat((self.labels, torch.tensor([copy(label)]*len(loaded_data))), dim=0)
         self.data = self.data.to(self.device)
         self.labels = self.labels.to(self.device)
-
 
     def __len__(self):
         if self.load_all_data:
@@ -63,6 +64,7 @@ class DatasetTemplate(Dataset):
         if self.load_all_data:
             data = self.data[idx,:, :]
             label = self.labels[idx]
+
             return data, label
 
         else:

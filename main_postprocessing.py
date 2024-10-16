@@ -1,5 +1,7 @@
 import os.path
 
+import matplotlib.pyplot as plt
+
 from Framework.postprocessors.postprocesor import Postprocessor
 from Framework.utils.utils import load_json_as_dict
 from Framework.loops.loops import test_loop
@@ -29,7 +31,9 @@ post_processor.set_paths(result_folder_path=config['Saving_path'],
                          valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
                          train_score_final_file_name=train_final_batch_score)
 
-threshold, classification_score = post_processor.estimate_threshold()
+threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
+
+
 
 
 path = load_json_as_dict('./data_paths.json')
@@ -50,19 +54,19 @@ PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
 model.load_state_dict(torch.load(PATH))
 model.eval()
 
-print(datasets)
 
 test_dataloader = datasets['Test'][0]
 
-
 criterion = RMSELoss()
-print(F"Estimated th")
-classification_score_test_0, classification_score_test_1, predicted_results = test_loop(test_dataloader, model, criterion, threshold,device=device)
+
+testing_loop = lambda : test_loop(test_dataloader, model, criterion, threshold, device=device)
+
+classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(threshold,
+                                                                                                            testing_loop)
+
 print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
 
-print(predicted_results)
-
-
+plt.show()
 '''
 plt.figure()
 plt.hist(train_scores, bins=15, density=True, alpha=0.5, label='Histogram of Anomaly Scores', color='orange')

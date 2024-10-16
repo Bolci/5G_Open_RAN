@@ -1,6 +1,7 @@
 import os
+from typing import Callable
+
 import numpy as np
-from sqlalchemy import table
 from Framework.postprocessors.postprocessor_functions import mean_labels_over_epochs
 from Framework.utils.utils import load_txt
 from Framework.postprocessors.postprocessor_functions import split_score_by_labels
@@ -91,7 +92,7 @@ class Postprocessor:
         return np.asarray(no_class_all), np.asarray(boundary_scores)
 
 
-    def estimate_threshold(self, use_epochs:int = 5, no_steps_to_estimate:int = 200, save_into_fig:bool = True):
+    def estimate_threshold_on_valid_data(self, use_epochs:int = 5, no_steps_to_estimate:int = 200, prepare_fig:bool = True):
         train_scores, valid_scores = self.load_files_final_metrics()
         no_class_all, boundary_scores = self.calculate_values_for_threshold_diagram(valid_scores,
                                                                                     no_steps_to_estimate=no_steps_to_estimate,
@@ -103,22 +104,48 @@ class Postprocessor:
         threshold = boundary_scores[idx_max]
         classification_score = no_class_all[idx_max]
 
-        if save_into_fig:
-            plt.figure()
-            plt.vlines(boundary_scores[idx_max], ymin=0, ymax=1, linestyles='dashed', alpha=0.5)
-            plt.plot(boundary_scores, no_class_all)
-            plt.plot(threshold,classification_score , 'r*')
-            plt.grid()
-            plt.ylim([0,1])
-            plt.xlim([boundary_scores[0], boundary_scores[-1]])
-            plt.title(f"Classification score = {classification_score:.4f}, \n Threshold={threshold:.8f} on validartion data")
-            saving_path = os.path.join(self.result_folder_path, 'valid_data_threshold_estimation.png')
-            plt.xlabel('Metrics score')
-            plt.ylabel('Classification score [%]')
-            plt.savefig(saving_path)
+        fig = None
+        if prepare_fig:
+            fig, ax  = plt.subplots()
+            ax.vlines(boundary_scores[idx_max], ymin=0, ymax=1, linestyles='dashed', alpha=0.5)
+            ax.plot(boundary_scores, no_class_all)
+            ax.plot(threshold,classification_score , 'r*')
+            ax.grid()
+            ax.set_ylim([0,1])
+            ax.set_xlim([boundary_scores[0], boundary_scores[-1]])
+            ax.set_title(f"Classification score = {classification_score:.4f}, \n Threshold={threshold:.8f} on validartion data")
+            ax.set_xlabel('Metrics score')
+            ax.set_ylabel('Classification score [%]')
 
+        return threshold, classification_score, fig
 
-        return threshold, classification_score
+    def test_data(self,
+                  testing_threshold_from_valid: float,
+                  testing_loop: Callable,
+                  use_epochs:int = 5,
+                  no_steps_to_estimate:int = 200,
+                  prepare_fig:bool = True):
+        classification_score_test_0, classification_score_test_1, predicted_results = testing_loop()
+        no_class_all, boundary_scores = self.calculate_values_for_threshold_diagram(predicted_results, no_steps_to_estimate, use_epochs)
+        boundary_scores = np.asarray(boundary_scores)
+        no_class_all = np.asarray(no_class_all)
+        max_valid_score = np.max(np.asarray([classification_score_test_0, classification_score_test_1]))
+
+        fig = None
+        if prepare_fig:
+            fig, ax = plt.subplots()
+            ax.vlines(testing_threshold_from_valid, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color = 'green', label='valid_threshold')
+            ax.plot(boundary_scores, no_class_all)
+            ax.plot(testing_threshold_from_valid, max_valid_score, 'g*', label = 'score from valid threshold')
+            ax.grid()
+            ax.set_ylim([0, 1])
+            ax.set_xlim([boundary_scores[0], boundary_scores[-1]])
+            ax.set_title(
+                f"Classification score = {max_valid_score:.4f} on testing data, \n Threshold={testing_threshold_from_valid:.8f} from valid data")
+            ax.set_xlabel('Metrics score')
+            ax.set_ylabel('Classification score [%]')
+
+        return classification_score_test_0, classification_score_test_1, predicted_results, fig
 
     def estimate_PDF(self):
         pass
