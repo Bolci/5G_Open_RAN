@@ -5,9 +5,7 @@ import numpy as np
 from Framework.postprocessors.postprocessor_functions import mean_labels_over_epochs
 from Framework.utils.utils import load_txt
 from Framework.postprocessors.postprocessor_functions import split_score_by_labels
-
 import matplotlib.pyplot as plt
-
 
 
 class Postprocessor:
@@ -82,13 +80,10 @@ class Postprocessor:
 
         for x in range(200):
             boundary_score = min_score + ds * x
-
             no_class_0 = len(np.where(boundary_score <= data_class_0)[0])
             no_class_1 = len(np.where(boundary_score > data_class_1)[0])
-
             no_class_all.append((no_class_1 + no_class_0) / (no_all_class_0 + no_all_class_1))
             boundary_scores.append(boundary_score)
-
         return np.asarray(no_class_all), np.asarray(boundary_scores)
 
 
@@ -116,7 +111,7 @@ class Postprocessor:
             ax.grid()
             ax.set_ylim([0,1])
             ax.set_xlim([boundary_scores[0], boundary_scores[-1]])
-            ax.set_title(f"Classification score = {classification_score:.4f}, \n Threshold={threshold:.8f} on validartion data")
+            ax.set_title(f"Classification score = {classification_score:.4f}, \n Threshold={threshold:.8f} on validation data")
             ax.set_xlabel('Metrics score')
             ax.set_ylabel('Classification score [%]')
 
@@ -158,4 +153,6 @@ class Postprocessor:
                 fig.savefig(saving_path)
 
         return classification_score_test_0, classification_score_test_1, predicted_results, fig
+
+
 

@@ -50,12 +50,12 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
         after_lr = optimizer.param_groups[0]["lr"]
         print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
-
         model.eval()
         valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
+
         wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
@@ -186,7 +186,8 @@ def main(path, args):
     print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
 
     wandb.log({"Classification_score_valid": classification_score,
-               "classification_score_test": [classification_score_test_0, classification_score_test_1],
+               "classification_score_test_0": classification_score_test_0,
+               "classification_score_test_1": classification_score_test_1,
                "Threshold":threshold})
 
     wandb.finish()
