@@ -48,18 +48,20 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
         before_lr = optimizer.param_groups[0]["lr"]
         scheduler.step()
         after_lr = optimizer.param_groups[0]["lr"]
-        print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
+        print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
+
 
         model.eval()
         valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
-        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "epoch": epoch})
+        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
 
+    model.eval()
     _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
                                                  model,
                                                  criterion,
@@ -175,6 +177,8 @@ def main(path, args):
 
     threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
     test_dataloader = datasets['Test'][0]
+
+    model.eval()
     testing_loop = lambda: test_loop(test_dataloader, model, criterion, threshold, device=device)
     classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(
         threshold,
