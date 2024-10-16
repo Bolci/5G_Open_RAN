@@ -61,30 +61,3 @@ def process_data(data_path: str, original_sequence_path: str) -> np.ndarray:
         raise FileNotFoundError(f"No .npy files found in {data_path}")
     else:
         return data
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Process data and create torch tensors for individual datasets - channel responses in a complex form."
-    )
-    parser.add_argument(
-        "--data_path",
-        type=str,
-        default="C:/Users/xzelen23/PycharmProjects/5G_Open_RAN/Data_selection/Fake_Bts_PCI_466_wPA_traffic",
-    )
-    parser.add_argument(
-        "--original_sequence_path",
-        type=str,
-        default="C:/Users/xzelen23/PycharmProjects/5G_Open_RAN/Data_selection/original.npy",
-    )
-    # parser.add_argument("--save_path", type=str, default="Data_selection/commercial/")
-    # parser.add_argument("--save_name", type=str, default="channel_responses.pt")
-    args = parser.parse_args()
-    print(
-        f"Processing the data from {args.data_path} and saving it to {args.data_path} as channel_responses.pt"
-    )
-
-    data = process_data(args.data_path, args.original_sequence_path)
-    data = torch.tensor(data, dtype=torch.complex64)
-    torch.save(data, os.path.join(args.data_path, "channel_responses.pt"))
-    print("Data processed and saved successfully.")

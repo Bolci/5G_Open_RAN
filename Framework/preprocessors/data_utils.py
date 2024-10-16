@@ -5,8 +5,8 @@ from copy import copy
 
 def get_datasets(paths: dict, loader_function =  lambda x: torch.load(x)):
     return_datsets = {'Train': [], 'Valid': [], 'Test': []}
-    for dataset_type, paths in paths.items():
 
+    for dataset_type, paths in paths.items():
         for single_path in paths:
             new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
             return_datsets[dataset_type].append(copy(new_dataset))
@@ -23,3 +23,4 @@ def get_data_loaders(Datasets: dict, batch_size):
             return_datasets[dataset_type].append(DataLoader(single_dataset, batch_size=bs, shuffle=True))
 
     return return_datasets
+
