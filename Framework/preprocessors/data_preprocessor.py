@@ -119,8 +119,6 @@ class DataPreprocessor(PreprocessorTypes):
             single_processed_data_torch = torch.Tensor(single_matrix)
             torch.save(single_processed_data_torch, file_path)
 
-
-
         else:
             for single_file_name in all_files:
                 single_file_path = os.path.join(source_folder_path, single_file_name)
@@ -136,8 +134,6 @@ class DataPreprocessor(PreprocessorTypes):
                     self.counters[data_type] += 1
 
 
-
-
     def preprocess_data(self, data_paths: dict,
                         preprocessing_type: str,
                         mix_valid: bool = True,
@@ -150,7 +146,6 @@ class DataPreprocessor(PreprocessorTypes):
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
-
 
         for data_type, list_path in data_paths.items():
             for single_path in list_path:
