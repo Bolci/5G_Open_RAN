@@ -82,4 +82,3 @@ def test_loop(dataloader_test,
     classification_score_1 = float(counter_var_1) / float(no_samples)
 
     return classification_score_0, classification_score_1, predicted_results
-

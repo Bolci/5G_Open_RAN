@@ -9,7 +9,7 @@ from Framework.metrics.metrics import RMSELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
-from Framework.postprocessors.postprocesor import Postprocessor
+from Framework.postprocessors.postprocesor_general import Postprocessor
 import os
 import torch
 import matplotlib.pyplot as plt
