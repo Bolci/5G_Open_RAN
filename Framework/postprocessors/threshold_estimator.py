@@ -135,7 +135,7 @@ class ThresholdEstimator(PostprocessorGeneral):
                 fig.savefig(saving_path)
 
 
-        return classification_score_on_test, [fig, fig_2]
+        return classification_score_valid, classification_score_on_test, [fig, fig_2]
 
 
 

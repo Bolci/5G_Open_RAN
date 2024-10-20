@@ -53,9 +53,8 @@ class Tester:
         scores = {}
         all_figs = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
-            print(single_tester)
-            classification_score, figs = single_tester.calculate_classification_score(testing_loop)
-            scores[single_tester_name] = copy(classification_score)
+            classification_score_valid, classification_score_test, figs = single_tester.calculate_classification_score(testing_loop)
+            scores[single_tester_name] = {'valid_score': copy(classification_score_valid), 'test_score': copy(classification_score_test)}
             all_figs[single_tester_name] = copy(figs)
 
         return scores, all_figs

@@ -91,7 +91,9 @@ class PDFComparator(PostprocessorGeneral):
 
         self.estimate_pdf_on_train()
         self.estimate_pdf_on_valid()
-        scores = {}
-        all_figs = {}
 
-        return scores, all_figs
+        classification_score_valid = None
+        classification_score_on_test = None
+        fig = None
+
+        return classification_score_valid, classification_score_on_test, [fig]

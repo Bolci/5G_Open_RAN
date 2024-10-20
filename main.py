@@ -9,7 +9,8 @@ from Framework.metrics.metrics import RMSELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
-from Framework.postprocessors.postprocesor_general import Postprocessor
+from Framework.postprocessors.tester import Tester
+from Framework.postprocessors.postprocessor_utils import get_print_message
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -167,28 +168,29 @@ def main(path, args):
 
 
     #testing loop
-    post_processor = Postprocessor()
-    post_processor.set_paths(result_folder_path=path['Saving_path'],
+    tester = Tester(result_folder_path=path['Saving_path'],
                              attempt_name=saving_folder_name,
                              train_score_over_epoch_file_name=train_over_epoch,
                              valid_score_over_epoch_file_name=valid_over_epoch,
                              valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
                              train_score_final_file_name=train_final_score_per_batch)
 
-    threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
+    #test data loader and loop
     test_dataloader = datasets['Test'][0]
+    testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 
-    model.eval()
-    testing_loop = lambda: test_loop(test_dataloader, model, criterion, threshold, device=device)
-    classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(
-        threshold,
-        testing_loop)
-    print(f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}")
+    scores, figs = tester.test_data(testing_loop)
 
+    print_messages = get_print_message(scores)
+    for single_print_message in print_messages:
+        print(single_print_message)
+
+
+    '''
     wandb.log({"Classification_score_valid": classification_score,
                "classification_score_test_0": classification_score_test_0,
-               "classification_score_test_1": classification_score_test_1,
-               "Threshold":threshold})
+               "classification_score_test_1": classification_score_test_1})
+    '''
 
     wandb.finish()
 
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs"
+        "--epochs", type=int, default=3, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32, help="Batch size"
