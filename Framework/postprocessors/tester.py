@@ -49,7 +49,6 @@ class Tester:
                   prepare_figs: bool = True,
                   save_figs: bool = True):
 
-
         scores = {}
         all_figs = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
@@ -58,5 +57,3 @@ class Tester:
             all_figs[single_tester_name] = copy(figs)
 
         return scores, all_figs
-
-

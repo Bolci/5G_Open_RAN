@@ -136,6 +136,3 @@ class ThresholdEstimator(PostprocessorGeneral):
 
 
         return classification_score_valid, classification_score_on_test, [fig, fig_2]
-
-
-

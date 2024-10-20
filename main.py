@@ -181,6 +181,7 @@ def main(path, args):
 
     scores, figs = tester.test_data(testing_loop)
 
+    #processing scores
     print_messages = get_print_message(scores)
     for single_print_message in print_messages:
         print(single_print_message)
@@ -188,7 +189,6 @@ def main(path, args):
     for tester_label, single_scores in scores.items():
         for single_scores_type_label, single_score_type_value in scores.items():
             wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
-
     wandb.finish()
 
 
