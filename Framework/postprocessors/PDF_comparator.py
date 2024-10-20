@@ -41,20 +41,6 @@ class PDFComparator(PostprocessorGeneral):
         x_d_class_0, density_class_0 = self.estimate_pdf(valid_scores_class_0_norm)
         x_d_class_1, density_class_1 = self.estimate_pdf(valid_scores_class_1_norm)
 
-        '''
-        bins = 15
-        plt.figure()
-        #plt.hist(valid_scores_class_0_norm, bins=bins, density=False, alpha=0.5, label='Histogram of Anomaly Scores',
-        #         color='orange')
-        plt.plot(x_d_class_0, density_class_0 , label='KDE', color='red')
-        plt.plot(x_d_class_1, density_class_1,  color='blue')
-
-        plt.figure()
-        plt.hist(valid_scores_class_1_norm, bins=bins, density=False, alpha=0.5, label='Histogram of Anomaly Scores',
-                 color='blue')
-
-        plt.show()
-        '''
         return [x_d_class_0, density_class_0], [x_d_class_1, density_class_1]
 
 
@@ -81,7 +67,6 @@ class PDFComparator(PostprocessorGeneral):
         plt.ylabel('Density')
         plt.legend()
         plt.grid(True)
-        plt.show()
 
         return x_d, density
 
