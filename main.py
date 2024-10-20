@@ -185,12 +185,9 @@ def main(path, args):
     for single_print_message in print_messages:
         print(single_print_message)
 
-
-    '''
-    wandb.log({"Classification_score_valid": classification_score,
-               "classification_score_test_0": classification_score_test_0,
-               "classification_score_test_1": classification_score_test_1})
-    '''
+    for tester_label, single_scores in scores.items():
+        for single_scores_type_label, single_score_type_value in scores.items():
+            wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
 
     wandb.finish()
 
