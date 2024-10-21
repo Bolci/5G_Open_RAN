@@ -91,7 +91,7 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-    model = CNNAutoencoderV2()
+    model = CNNAutoencoderV2(dropout=args.dropout)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -187,7 +187,8 @@ def main(path, args):
     wandb.log({"Classification_score_valid": classification_score,
                "classification_score_test_0": classification_score_test_0,
                "classification_score_test_1": classification_score_test_1,
-               "Threshold":threshold})
+               "Threshold":threshold,
+               "Directory": saving_folder_name})
 
     wandb.finish()
 
@@ -202,6 +203,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--batch_size", type=int, default=163420, help="Batch size"
+    )
+    parser.add_argument(
+        "--dropout", type=float, default=0.1, help="Dropout "
     )
     parser.add_argument(
         "--learning_rate", type=float, default=0.001, help="Learning rate"
