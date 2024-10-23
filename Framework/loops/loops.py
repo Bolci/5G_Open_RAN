@@ -13,9 +13,10 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
 
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
-        X_ = X.to(device)
-        pred = model(X_)
-        loss = loss_fn(pred, X_)
+        X_ = X.to(device).squeeze()
+        pred = model.model(X_)
+        # loss = loss_fn(pred, X_)
+        loss = model.loss_function(pred)
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
@@ -38,9 +39,11 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     with torch.no_grad():
         for X, y in dataloader:
-            X_ = X.to(device)
-            pred = model(X_)
-            test_loss = loss_fn(pred, X_).item()
+            X_ = X.to(device).squeeze()
+            pred = model.model(X_)
+            test_loss = model.loss_function(pred).item()
+
+            # test_loss = loss_fn(pred, X_).item()
             test_losses_score.append(copy(test_loss))
 
             if not is_train:
@@ -68,8 +71,9 @@ def test_loop(dataloader_test,
             if not (len(X.shape) == 3):
                 X = X.unsqueeze(dim=0)
 
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
+            pred = model.model(X.to(device))
+            test_loss = model.loss_function(pred).item()
+            # test_loss = loss_fn(pred, X).item()
 
             if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
                 counter_var_0 +=1

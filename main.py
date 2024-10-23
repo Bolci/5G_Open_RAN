@@ -10,6 +10,7 @@ from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.postprocesor import Postprocessor
+from Framework.Model_bank.deepSVDD import SimpleNet, DeepSVDD
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -20,12 +21,13 @@ import wandb
 
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
 
 
-    model.to(device)
-    criterion.to(device)
+    model.model.to(device)
+    model.initialize_center(dataloaders['Train'][0], device)
+    # criterion.to(device)
 
     #do one validation loop to ini everything
     _, _, _ = valid_loop(dataloaders['Valid'][0],
@@ -39,18 +41,18 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
     for epoch in range(no_epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
 
-        model.train()
+        model.model.train()
         train_loss = train_loop(dataloaders['Train'][0],
                                 model,
                                 criterion,
                                 optimizer,
                                 device=device)
-        # before_lr = optimizer.param_groups[0]["lr"]
+        before_lr = optimizer.param_groups[0]["lr"]
         scheduler.step()
-        # after_lr = optimizer.param_groups[0]["lr"]
+        after_lr = optimizer.param_groups[0]["lr"]
         # print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
-        model.eval()
+        model.model.eval()
         valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
@@ -61,7 +63,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
 
-    model.eval()
+    model.model.eval()
     _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
                                                  model,
                                                  criterion,
@@ -86,12 +88,15 @@ def main(path, args):
 
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           rewrite_data = True,
+                                                           rewrite_data = False,
                                                            merge_files = True)
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-    model = CNNAutoencoderV2(dropout=args.dropout)
+
+    # model = CNNAutoencoderV2(dropout=args.dropout)
+
+    model = DeepSVDD(SimpleNet().to(device))
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -158,7 +163,7 @@ def main(path, args):
 
     #save model
     model_path = os.path.join(saving_path, 'model.pt')
-    torch.save(model.state_dict(), model_path)
+    torch.save(model.model.state_dict(), model_path)
 
     #valid_graph
     sv_path = os.path.join(saving_path, 'valid_graph.png')
@@ -177,7 +182,7 @@ def main(path, args):
     threshold, classification_score, _ = post_processor.estimate_threshold_on_valid_data()
     test_dataloader = datasets['Test'][0]
 
-    model.eval()
+    model.model.eval()
     testing_loop = lambda: test_loop(test_dataloader, model, criterion, threshold, device=device)
     classification_score_test_0, classification_score_test_1, predicted_results, fig = post_processor.test_data(
         threshold,
@@ -202,7 +207,7 @@ if __name__ == "__main__":
         "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=163420, help="Batch size"
+        "--batch_size", type=int, default=512, help="Batch size"
     )
     parser.add_argument(
         "--dropout", type=float, default=0.1, help="Dropout "
@@ -223,7 +228,7 @@ if __name__ == "__main__":
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
         config=vars(parser.parse_args()),
-        mode="online",
+        mode="offline",
         # tags=[f"NewV{i}.{j}.4"],
     )
 

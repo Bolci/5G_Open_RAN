@@ -34,7 +34,6 @@ class Postprocessor:
     def load_files_final_metrics(self):
         train_scores = load_txt(self.train_score_final_file_full_path)
         valid_scores = load_txt(self.valid_score_over_epoch_per_batch_file_name)[-1]
-        print(valid_scores)
         return train_scores, valid_scores
 
 
