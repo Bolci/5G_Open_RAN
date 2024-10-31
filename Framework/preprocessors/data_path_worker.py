@@ -1,12 +1,31 @@
 import os
 
-
 def create_paths_for_data_type(path: str):
+    """
+    Creates a list of full paths for each folder in the given directory.
+
+    Args:
+        path (str): The path to the directory containing the folders.
+
+    Returns:
+        list: A list of full paths to each folder in the directory.
+    """
     folders = os.listdir(path)
     return [os.path.join(path, x) for x in folders]
 
-
 def get_all_paths(path: dict) -> dict:
+    """
+    Retrieves paths for training, validation, and testing datasets.
+
+    This function constructs full paths for the 'Train', 'Valid', and 'Test' datasets
+    based on the provided dictionary of paths.
+
+    Args:
+        path (dict): A dictionary containing the general data path and specific folder names for each dataset type.
+
+    Returns:
+        dict: A dictionary containing lists of full paths for 'Train', 'Valid', and 'Test' datasets.
+    """
     general_path = path["Data_path"]
 
     train_folders_path = []
