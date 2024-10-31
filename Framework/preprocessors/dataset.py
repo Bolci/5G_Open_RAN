@@ -64,7 +64,6 @@ class DatasetTemplate(Dataset):
         if self.load_all_data:
             data = self.data[idx,:, :]
             label = self.labels[idx]
-
             return data, label
 
         else:

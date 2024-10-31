@@ -8,6 +8,17 @@ from pathlib import Path
 
 
 class PreprocessorTypes:
+    '''
+    namespace of functions that manages the sequnces to preprocess data, current_preprocessings:
+    abs_only -
+    abs_only_by_one -
+    abs_only_mean_by_group -
+    abs_and_phase -
+    abs_only_multichannel -
+    raw_IQ -
+
+    expected return_format (N, d, C) - no. of data,  lenght of data, no channels of data
+    '''
     @staticmethod
     def abs_only(original_sequence, raw_data):
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
@@ -47,6 +58,24 @@ class PreprocessorTypes:
         return np.concatenate((data_abs, data_phase), axis=1)
 
     @staticmethod
+    def abs_only_multichannel(original_sequence, raw_data, max_dim: int = 48):
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data_abs = np.abs(data).astype(np.float32)
+        data_abs = DataPreprocessorFunctions.to_log(data_abs)
+
+        if data_abs.shape[1] > max_dim:
+            data_abs = data_abs[:, :max_dim]
+
+        if data_abs.shape[1] < max_dim:
+            zero_data = np.zeros((data_abs.shape[0], 1), dtype=np.float32)
+
+            for x in range(max_dim - data_abs.shape[1]):
+                data_abs = np.concatenate((data_abs, zero_data), axis=1)
+        data_abs = np.expand_dims(data_abs, axis=0)
+
+        return data_abs
+
+    @staticmethod
     def raw_IQ(original_sequence, raw_data):
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data_real = data.real
@@ -64,7 +93,9 @@ class DataPreprocessor(PreprocessorTypes):
         self.original_seq = []
         self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y),
                                        'abs_only_mean_by_group': lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
-                                       'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y)}
+                                       'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
+                                       'abs_only_multichannel': lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y)
+                                       }
         self.counters = {"Train": 0,
                          "Valid": 0,
                          "Test": 0}
@@ -134,19 +165,21 @@ class DataPreprocessor(PreprocessorTypes):
                     self.counters[data_type] += 1
 
 
-    def preprocess_data(self, data_paths: dict,
+    def preprocess_data(self,
+                        data_paths: dict,
                         preprocessing_type: str,
                         mix_valid: bool = True,
                         mix_test: bool = True,
                         rewrite_data: bool = False,
-                        merge_files: bool = False) -> dict:
+                        merge_files: bool = False,
+                        additional_folder_label: str = '') -> dict:
 
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
-
+        print(data_paths)
         for data_type, list_path in data_paths.items():
             for single_path in list_path:
                 measurement_folder = Path(single_path).parts[-1]
@@ -160,10 +193,10 @@ class DataPreprocessor(PreprocessorTypes):
                     mix_bool = True
 
                 if not mix_bool:
-                    path_data_folder = os.path.join(self.data_cache_path, preprocessing_type, data_type,
+                    path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type,
                                                     measurement_folder)
                 else:
-                    path_data_folder = os.path.join(self.data_cache_path, preprocessing_type, data_type)
+                    path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type)
 
                 full_data_path = self.prepare_saving_path(path_data_folder)
 

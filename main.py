@@ -6,7 +6,8 @@ from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
@@ -92,7 +93,8 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-    model = CNNAutoencoderV2()
+
+    model = CNNAEV2(48)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -198,19 +200,19 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=3, help="Number of epochs"
+        "--epochs", type=int, default=100, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size"
+        "--batch_size", type=int, default=16, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.00001, help="Learning rate"
     )
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
     )
     parser.add_argument(
-        "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
+        "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
     )
     args = parser.parse_args()
 
@@ -218,6 +220,7 @@ if __name__ == "__main__":
     wandb.init(
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
+        name="all_50_test",
         config=vars(parser.parse_args()),
         mode="online",
         # tags=[f"NewV{i}.{j}.4"],

@@ -9,6 +9,10 @@ class ThresholdEstimator(PostprocessorGeneral):
     def __init__(self):
         super().__init__()
 
+        self.classification_score_over_thresholds_valid = None
+        self.classification_score_over_thresholds_test = None
+        self.threshold_values = None
+
     def get_threshold_limits(self, use_epochs:int = 5):
         train_over_epoch, _ = self.load_files_over_epochs()
         valid_over_epoch_class_0, valid_over_epoch_class_1 = self.load_and_parse_valid_per_batch_per_epoch()
@@ -31,6 +35,7 @@ class ThresholdEstimator(PostprocessorGeneral):
 
         boundary_scores = []
         no_class_all = []
+        no_class_all_reversed = []
 
         data_class_1, data_class_0 = split_score_by_labels(data)
         no_all_class_0 = len(data_class_0)
@@ -40,30 +45,38 @@ class ThresholdEstimator(PostprocessorGeneral):
             boundary_score = min_score + ds * x
             no_class_0 = len(np.where(boundary_score <= data_class_0)[0])
             no_class_1 = len(np.where(boundary_score > data_class_1)[0])
-            no_class_all.append((no_class_1 + no_class_0) / (no_all_class_0 + no_all_class_1))
-            boundary_scores.append(boundary_score)
-        return np.asarray(no_class_all), np.asarray(boundary_scores)
 
-    def estimate_threshold_on_valid_data(self,
-                                         use_epochs:int = 5,
-                                         no_steps_to_estimate:int = 200):
-        train_scores, valid_scores = self.load_files_final_metrics()
-        classification_score_over_threshols, threshold_values = self.calculate_values_for_threshold_diagram(valid_scores,
-                                                                                    no_steps_to_estimate=no_steps_to_estimate,
-                                                                                    use_epochs=use_epochs)
-        idx_max = np.argmax(classification_score_over_threshols)
+            no_class_0_reversed = len(np.where(boundary_score > data_class_0)[0])
+            no_class_1_reversed = len(np.where(boundary_score <= data_class_1)[0])
+
+            no_class_all.append((no_class_1 + no_class_0) / (no_all_class_0 + no_all_class_1))
+            no_class_all_reversed.append((no_class_0_reversed + no_class_1_reversed)/(no_all_class_0 + no_all_class_1))
+
+            boundary_scores.append(boundary_score)
+
+        no_class_all_reversed = np.asarray(no_class_all_reversed) - 1
+        all_class_return = no_class_all_reversed if np.max(no_class_all_reversed) > np.max(no_class_all) else no_class_all
+
+        return np.asarray(all_class_return), np.asarray(boundary_scores)
+
+    @staticmethod
+    def estimate_threshold(classification_score_over_thresholds, threshold_values):
+        idx_max = np.argmax(classification_score_over_thresholds)
         threshold = threshold_values[idx_max]
-        classification_score = classification_score_over_threshols[idx_max]
-        return threshold, classification_score, classification_score_over_threshols, threshold_values
+        classification_score = classification_score_over_thresholds[idx_max]
+        return threshold, classification_score
 
     def get_score_on_test_data(self,
                                test_loop: Callable,
-                               estimated_threshold_from_valid_data: int,
                                use_epochs: int = 5,
                                no_steps_to_estimate: int = 200,
                               ):
+
+        if self.measured_condition is None:
+            raise Exception('Threshold has not been estimated yet')
+
         classification_score_test_0, classification_score_test_1, predicted_results = (
-            test_loop(estimated_threshold_from_valid_data))
+            test_loop(self.measured_condition))
 
 
         (classification_score_over_threshold_test,
@@ -76,63 +89,74 @@ class ThresholdEstimator(PostprocessorGeneral):
         return  classification_score, classification_score_over_threshold_test, threshold_values
 
 
-    def calculate_classification_score(self,
-                                       testing_loop,
-                                       use_epochs: int = 5,
-                                       no_steps_to_estimate: int = 200,
-                                       prepare_fig: bool = True,
-                                       save_fig: bool = True):
+    def estimate_decision_lines(self, use_epochs:int = 5, no_steps_to_estimate:int = 200):
+        train_scores, valid_scores = self.load_files_final_metrics()
 
-        (threshold_valid,
-         classification_score_valid,
-         classification_score_over_threshold_valid,
-         threshold_values_valid) = self.estimate_threshold_on_valid_data(use_epochs=use_epochs,
-                                                                         no_steps_to_estimate=no_steps_to_estimate)
+        classification_score_over_thresholds, threshold_values = self.calculate_values_for_threshold_diagram(
+                                                                                valid_scores,
+                                                                                no_steps_to_estimate=no_steps_to_estimate,
+                                                                                use_epochs=use_epochs)
+        threshold, classification_score = self.estimate_threshold(classification_score_over_thresholds, threshold_values)
+
+        self.classification_score_over_thresholds_valid = classification_score_over_thresholds
+        self.threshold_values = threshold_values
+        self.measured_condition = threshold
+
+        return threshold, classification_score
+
+
+    def test(self,
+            testing_loop,
+            use_epochs: int = 5,
+            no_steps_to_estimate: int = 200,
+            prepare_fig: bool = True,
+            save_fig: bool = True):
+
 
         (classification_score_on_test,
          classification_score_over_threshold_test,
          threshold_values_test) = self.get_score_on_test_data(test_loop=testing_loop,
-                                                              estimated_threshold_from_valid_data=threshold_valid,
                                                               use_epochs=use_epochs,
                                                               no_steps_to_estimate=no_steps_to_estimate)
 
-        fig = None
-        fig_2 = None
-        if prepare_fig:
-            #valid data fig
-            fig, ax = plt.subplots()
-            ax.vlines(threshold_valid, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color='blue',
-                      label='valid_threshold')
-            ax.plot(threshold_values_valid, classification_score_over_threshold_valid)
-            ax.plot(threshold_valid, classification_score_valid, 'r*', label='score from valid threshold')
-            ax.grid()
-            ax.set_ylim([0, 1])
-            ax.set_xlim([threshold_values_valid[0], threshold_values_valid[-1]])
-            ax.set_title(
-                f"Classification score = {classification_score_valid:.4f}, \n Threshold={threshold_valid:.8f} on validation data")
-            ax.set_xlabel('Metrics score')
-            ax.set_ylabel('Classification score [%]')
+        return classification_score_on_test
 
-            # test data fig
-            fig2, ax2 = plt.subplots()
-            ax2.vlines(threshold_valid, ymin=0, ymax=1, linestyles='dashed', alpha=0.5)
-            ax2.plot(threshold_values_test, classification_score_over_threshold_test)
-            ax2.plot(threshold_valid, classification_score_on_test, 'g*')
-            ax2.grid()
-            ax2.set_ylim([0, 1])
-            ax2.set_xlim([threshold_values_test[0], threshold_values_test[-1]])
-            ax2.set_title(
-                f"Classification score = {classification_score_on_test:.4f} on testing data, \n Threshold={threshold_valid:.8f} from valid data")
-            ax2.set_xlabel('Metrics score')
-            ax2.set_ylabel('Classification score [%]')
+    '''
+            fig = None
+            fig_2 = None
+            if prepare_fig:
+                #valid data fig
+                fig, ax = plt.subplots()
+                ax.vlines(threshold_valid, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color='blue',
+                          label='valid_threshold', linewidth=2.0)
+                ax.plot(threshold_values_valid, classification_score_over_threshold_valid, linewidth=2.0)
+                ax.plot(threshold_valid, classification_score_valid, 'r*', label='score from valid threshold', linewidth=2.5)
+                ax.grid()
+                ax.set_ylim([0, 1])
+                ax.set_xlim([threshold_values_valid[0], threshold_values_valid[-1]])
+                ax.set_title(
+                    f"Classification score = {classification_score_valid:.4f}, \n Threshold={threshold_valid:.8f} on validation data")
+                ax.set_xlabel('Metrics score')
+                ax.set_ylabel('Classification score [%]')
 
-
-            if save_fig:
-                saving_path = os.path.join(self.result_folder_path, 'threshols_on_testing_data.png')
-                fig2.savefig(saving_path)
-
-                saving_path = os.path.join(self.result_folder_path, 'threshols_estimation_on_validation_data.png')
-                fig.savefig(saving_path)
+                # test data fig
+                fig2, ax2 = plt.subplots()
+                ax2.vlines(threshold_valid, ymin=0, ymax=1, linestyles='dashed', alpha=0.5)
+                ax2.plot(threshold_values_test, classification_score_over_threshold_test)
+                ax2.plot(threshold_valid, classification_score_on_test, 'g*')
+                ax2.grid()
+                ax2.set_ylim([0, 1])
+                ax2.set_xlim([threshold_values_test[0], threshold_values_test[-1]])
+                ax2.set_title(
+                    f"Classification score = {classification_score_on_test:.4f} on testing data, \n Threshold={threshold_valid:.8f} from valid data")
+                ax2.set_xlabel('Metrics score')
+                ax2.set_ylabel('Classification score [%]')
 
 
-        return classification_score_valid, classification_score_on_test, [fig, fig_2]
+                if save_fig:
+                    saving_path = os.path.join(self.result_folder_path, 'threshols_on_testing_data.png')
+                    fig2.savefig(saving_path)
+
+                    saving_path = os.path.join(self.result_folder_path, 'threshols_estimation_on_validation_data.png')
+                    fig.savefig(saving_path)
+    '''

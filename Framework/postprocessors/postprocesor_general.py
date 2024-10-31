@@ -16,6 +16,8 @@ class PostprocessorGeneral(ABC):
         self.valid_score_over_epoch_per_batch_file_name = None
         self.train_score_final_file_full_path = None
 
+        self.measured_condition = None
+
     def set_paths(self,
                   result_folder_path: str,
                   attempt_name: str,
@@ -49,5 +51,9 @@ class PostprocessorGeneral(ABC):
         return train_scores, valid_scores
 
     @abstractmethod
-    def calculate_classification_score(self, *args, **kwargs):
+    def estimate_decision_lines(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def test(self, *args, **kwargs):
         pass

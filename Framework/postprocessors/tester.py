@@ -24,11 +24,11 @@ class Tester:
 
         threshold_estimator = ThresholdEstimator()
         threshold_estimator.set_paths(result_folder_path=result_folder_path,
-                                           attempt_name=attempt_name,
-                                           train_score_over_epoch_file_name=train_score_over_epoch_file_name,
-                                           valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
-                                           valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
-                                           train_score_final_file_name=train_score_final_file_name)
+                                      attempt_name=attempt_name,
+                                      train_score_over_epoch_file_name=train_score_over_epoch_file_name,
+                                      valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
+                                      valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
+                                      train_score_final_file_name=train_score_final_file_name)
 
         pdf_comparator = PDFComparator()
         pdf_comparator.set_paths(result_folder_path=result_folder_path,
@@ -42,18 +42,30 @@ class Tester:
                               'pdf_comparator': pdf_comparator}
 
 
+    def estimate_decision_lines(self,
+                                use_epochs: int = 5,
+                                no_steps_to_estimate: int = 200,
+                                prepare_figs: bool = True,
+                                save_figs: bool = True
+                                ):
+        valid_scores = {}
+        for single_tester_name, single_tester in self.tester_buffer.items():
+            threshold, classification_score = single_tester.estimate_decision_lines()
+            valid_scores[single_tester_name] = copy(classification_score)
+
+        return {'Validation scores': valid_scores}
+
     def test_data(self,
                   testing_loop: Callable,
                   use_epochs: int = 5,
                   no_steps_to_estimate: int = 200,
                   prepare_figs: bool = True,
                   save_figs: bool = True):
-
-        scores = {}
+        
+        testing_scores = {}
         all_figs = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
-            classification_score_valid, classification_score_test, figs = single_tester.calculate_classification_score(testing_loop)
-            scores[single_tester_name] = {'valid_score': copy(classification_score_valid), 'test_score': copy(classification_score_test)}
-            all_figs[single_tester_name] = copy(figs)
+            classification_score_on_test = single_tester.test(testing_loop)
+            testing_scores[single_tester_name] = copy(classification_score_on_test)
 
-        return scores, all_figs
+        return {'Testing scores': testing_scores}
