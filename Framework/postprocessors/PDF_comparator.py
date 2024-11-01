@@ -84,7 +84,12 @@ class PDFComparator(PostprocessorGeneral):
 
 
     def test(self,
-                                       testing_loop: Callable):
+             testing_loop = None,
+             use_epochs = None,
+             no_steps_to_estimate = None,
+             prepare_figs = None,
+             save_figs = None,
+             figs_label = None):
 
         #train_values, figs = self.estimate_pdf_on_train()
         #valid_values_class_0, valid_values_class_1 = self.estimate_pdf_on_valid()

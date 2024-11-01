@@ -16,7 +16,7 @@ class PostprocessorGeneral(ABC):
         self.valid_score_over_epoch_per_batch_file_name = None
         self.train_score_final_file_full_path = None
 
-        self.measured_condition = None
+        self.measured_decision_line = None
 
     def set_paths(self,
                   result_folder_path: str,

@@ -171,25 +171,27 @@ def main(path, args):
 
     #testing loop
     tester = Tester(result_folder_path=path['Saving_path'],
-                             attempt_name=saving_folder_name,
-                             train_score_over_epoch_file_name=train_over_epoch,
-                             valid_score_over_epoch_file_name=valid_over_epoch,
-                             valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
-                             train_score_final_file_name=train_final_score_per_batch)
+                    attempt_name=saving_folder_name,
+                    train_score_over_epoch_file_name=train_over_epoch,
+                    valid_score_over_epoch_file_name=valid_over_epoch,
+                    valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
+                    train_score_final_file_name=train_final_score_per_batch)
 
     #test data loader and loop
     test_dataloader = datasets['Test'][0]
     testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 
-    scores, figs = tester.test_data(testing_loop)
+    valid_scores = tester.estimate_decision_lines()
+    print('Validation scores is:')
+    print(valid_scores)
 
-    #processing scores
-    print_messages = get_print_message(scores)
-    for single_print_message in print_messages:
-        print(single_print_message)
+    test_scores = tester.test_data(testing_loop=testing_loop)
+    print('Test scores is:')
+    print(test_scores)
 
-    for tester_label, single_scores in scores.items():
-        for single_scores_type_label, single_score_type_value in scores.items():
+
+    for tester_label, single_scores in test_scores.items():
+        for single_scores_type_label, single_score_type_value in test_scores.items():
             wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
     wandb.finish()
 
@@ -200,7 +202,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=5, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=16, help="Batch size"

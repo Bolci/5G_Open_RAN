@@ -179,7 +179,7 @@ class DataPreprocessor(PreprocessorTypes):
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
-        print(data_paths)
+
         for data_type, list_path in data_paths.items():
             for single_path in list_path:
                 measurement_folder = Path(single_path).parts[-1]

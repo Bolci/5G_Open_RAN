@@ -67,9 +67,9 @@ scores = tester.estimate_decision_lines()
 scores = tester.test_data(testing_loop=testing_loop)
 
 
-#aditional_test
+'''Testing on the additional dataset'''
 
-config_path_additional_test = 'additiona_test_config.json'
+config_path_additional_test = 'additional_test_config.json'
 config_additional_test = load_json_as_dict(config_path_additional_test)
 all_paths = get_all_paths(config_additional_test)
 data_preprocessor = DataPreprocessor()
@@ -85,11 +85,10 @@ paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
 datasets = get_datasets(paths_for_datasets)
 test_dataloader = datasets['Test'][0]
 testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
-scores = tester.test_data(testing_loop=testing_loop)
-print(scores)
+scores = tester.test_data(testing_loop=testing_loop,
+                          figs_label = "test_scores_over_threshold_meas2")
 
 
-
-#plt.tight_layout()
-#plt.show()
+plt.tight_layout()
+plt.show()
 

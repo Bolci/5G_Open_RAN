@@ -43,29 +43,40 @@ class Tester:
 
 
     def estimate_decision_lines(self,
-                                use_epochs: int = 5,
+                                use_epochs: int = 1,
                                 no_steps_to_estimate: int = 200,
                                 prepare_figs: bool = True,
-                                save_figs: bool = True
+                                save_figs: bool = True,
+                                figs_label: str = "valid_scores_over_threshold"
                                 ):
         valid_scores = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
-            threshold, classification_score = single_tester.estimate_decision_lines()
+            threshold, classification_score = single_tester.estimate_decision_lines(use_epochs=use_epochs,
+                                                                                    no_steps_to_estimate=no_steps_to_estimate,
+                                                                                    save_figs=save_figs,
+                                                                                    prepare_figs=prepare_figs,
+                                                                                    figs_label=f'{figs_label}_{single_tester_name}')
             valid_scores[single_tester_name] = copy(classification_score)
 
         return {'Validation scores': valid_scores}
 
     def test_data(self,
                   testing_loop: Callable,
-                  use_epochs: int = 5,
+                  use_epochs: int = 1,
                   no_steps_to_estimate: int = 200,
                   prepare_figs: bool = True,
-                  save_figs: bool = True):
+                  save_figs: bool = True,
+                  figs_label: str = "test_scores_over_threshold"):
         
         testing_scores = {}
-        all_figs = {}
+
         for single_tester_name, single_tester in self.tester_buffer.items():
-            classification_score_on_test = single_tester.test(testing_loop)
+            classification_score_on_test = single_tester.test(testing_loop,
+                                                              use_epochs=use_epochs,
+                                                              no_steps_to_estimate=no_steps_to_estimate,
+                                                              prepare_figs=prepare_figs,
+                                                              save_figs=save_figs,
+                                                              figs_label=figs_label)
             testing_scores[single_tester_name] = copy(classification_score_on_test)
 
         return {'Testing scores': testing_scores}
