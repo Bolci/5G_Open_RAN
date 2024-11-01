@@ -80,8 +80,8 @@ class Postprocessor:
 
         for x in range(200):
             boundary_score = min_score + ds * x
-            no_class_0 = len(np.where(boundary_score <= data_class_0)[0])
-            no_class_1 = len(np.where(boundary_score > data_class_1)[0])
+            no_class_0 = len(np.where(boundary_score >= data_class_0)[0])
+            no_class_1 = len(np.where(boundary_score < data_class_1)[0])
             no_class_all.append((no_class_1 + no_class_0) / (no_all_class_0 + no_all_class_1))
             boundary_scores.append(boundary_score)
         return np.asarray(no_class_all), np.asarray(boundary_scores)
