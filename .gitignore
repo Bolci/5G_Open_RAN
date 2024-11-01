@@ -21,3 +21,4 @@ Results/*
 !Results/.gitkeep
 .idea/*
 */.idea
+distrib.ipynb
