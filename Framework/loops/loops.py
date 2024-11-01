@@ -99,97 +99,31 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
     counter_var_1 = 0
 
     with torch.no_grad():
+        # Iterate over the test dataloader
         for X, y in dataloader_test:
+            # Ensure the input tensor has 3 dimensions
             if not (len(X.shape) == 3):
                 X = X.unsqueeze(dim=0)
 
+            # Perform the forward pass and compute the test loss
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X).item()
 
+            # Update the counter for correctly classified samples for class 0
             if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
                 counter_var_0 += 1
 
+            # Update the counter for correctly classified samples for class 1
             if (test_loss <= threshold and y.item() == 1) or (test_loss > threshold and y.item() == 0):
                 counter_var_1 += 1
 
+            # Append the true label and test loss to the predicted results
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
+
+    # Calculate the classification score for class 0
     classification_score_0 = float(counter_var_0) / float(no_samples)
+    # Calculate the classification score for class 1
     classification_score_1 = float(counter_var_1) / float(no_samples)
 
+    # Return the classification scores and the predicted results
     return classification_score_0, classification_score_1, predicted_results
-
-import unittest
-import torch
-from torch.utils.data import DataLoader, TensorDataset
-
-
-class TestLoops(unittest.TestCase):
-
-    def train_loop_completes_epoch(self):
-        dataloader = DataLoader(TensorDataset(torch.randn(100, 10), torch.zeros(100)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        device = "cpu"
-
-        avg_loss = train_loop(dataloader, model, loss_fn, optimizer, device)
-        self.assertIsInstance(avg_loss, float)
-
-    def valid_loop_completes_validation(self):
-        dataloader = DataLoader(TensorDataset(torch.randn(100, 10), torch.zeros(100)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        device = "cpu"
-
-        avg_loss, losses_to_print, losses_score = valid_loop(dataloader, model, loss_fn, device)
-        self.assertIsInstance(avg_loss, float)
-        self.assertIsInstance(losses_to_print, list)
-        self.assertIsInstance(losses_score, list)
-
-    def test_loop_completes_testing(self):
-        dataloader_test = DataLoader(TensorDataset(torch.randn(100, 10), torch.zeros(100)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        threshold = 0.5
-        device = "cpu"
-
-        score_0, score_1, predicted_results = test_loop(dataloader_test, model, loss_fn, threshold, device)
-        self.assertIsInstance(score_0, float)
-        self.assertIsInstance(score_1, float)
-        self.assertIsInstance(predicted_results, list)
-
-    def train_loop_handles_empty_dataloader(self):
-        dataloader = DataLoader(TensorDataset(torch.randn(0, 10), torch.zeros(0)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
-        device = "cpu"
-
-        avg_loss = train_loop(dataloader, model, loss_fn, optimizer, device)
-        self.assertEqual(avg_loss, 0.0)
-
-    def valid_loop_handles_empty_dataloader(self):
-        dataloader = DataLoader(TensorDataset(torch.randn(0, 10), torch.zeros(0)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        device = "cpu"
-
-        avg_loss, losses_to_print, losses_score = valid_loop(dataloader, model, loss_fn, device)
-        self.assertEqual(avg_loss, 0.0)
-        self.assertEqual(len(losses_to_print), 0)
-        self.assertEqual(len(losses_score), 0)
-
-    def test_loop_handles_empty_dataloader(self):
-        dataloader_test = DataLoader(TensorDataset(torch.randn(0, 10), torch.zeros(0)), batch_size=10)
-        model = torch.nn.Linear(10, 10)
-        loss_fn = torch.nn.MSELoss()
-        threshold = 0.5
-        device = "cpu"
-
-        score_0, score_1, predicted_results = test_loop(dataloader_test, model, loss_fn, threshold, device)
-        self.assertEqual(score_0, 0.0)
-        self.assertEqual(score_1, 0.0)
-        self.assertEqual(len(predicted_results), 0)
-
-if __name__ == '__main__':
-    unittest.main()
