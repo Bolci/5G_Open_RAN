@@ -53,9 +53,11 @@ def plot_data_by_labels(data, saving_path):
         class_0 = data_per_epoch[indices_0]
         axis_x_0 = get_epochs_axis_x(id_epoch, len(class_0), offset=-0.2)
 
-        plt.plot(axis_x_1, class_1[:,1], 'r', alpha=0.1)
-        plt.plot(axis_x_0, class_0[:,1], 'b', alpha=0.1)
+        plt.plot(axis_x_1, class_1[:,1], 'r', alpha=0.5, label="Valid_class_1")
+        plt.plot(axis_x_0, class_0[:,1], 'b', alpha=0.5, label="Valid_class_0")
 
     plt.grid()
-    plt.xlabel('epochs')
+    plt.xlabel("epochs")
+    plt.ylabel("RMSE")
+
     plt.savefig(saving_path)
