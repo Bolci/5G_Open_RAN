@@ -11,6 +11,7 @@ from Framework.Model_bank.autoencoder_cnn import (
     CNNAutoencoderV2,
 )
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
+from Framework.Model_bank.transformer_ae import TransformerAutoencoder
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import (
     plot_data_by_labels,
@@ -23,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim.lr_scheduler as lr_scheduler
 import wandb
-
+import datetime
 
 def train_with_hp_setup(
     datasets, model, batch_size, learning_rate, no_epochs, device, criterion
@@ -105,7 +106,8 @@ def main(path, args):
     # prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
     # model = CNNAutoencoderV2(dropout=args.dropout)
-    model = CNNAEV2(48)
+    # model = CNNAEV2(48)
+    model = TransformerAutoencoder(input_dim=72, embed_dim=64, num_heads=2, num_layers=2)
     criterion = RMSELoss()
 
     (
@@ -125,9 +127,12 @@ def main(path, args):
 
     valid_metrics = mean_labels_over_epochs(valid_loss_all_save)
 
-    # preparing saving paths
-    saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
-    saving_path = os.path.join(path["Saving_path"], saving_folder_name)
+    #preparing saving paths
+    now = datetime.datetime.now()
+    folder_name = now.strftime("%Y%m%d%H%M%S")
+
+    saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}_{folder_name}"
+    saving_path = os.path.join(path['Saving_path'], saving_folder_name)
 
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
@@ -254,7 +259,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=15, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=163420, help="Batch size"
@@ -272,6 +277,18 @@ if __name__ == "__main__":
         default="abs_only_multichannel",
         help="Log interval",
     )
+    parser.add_argument(
+        "--layers", type=int, default=2, help="Layers in CNNs"
+    )
+    parser.add_argument(
+        "--init_channels", type=int, default=2, help="Initial channels"
+    )
+    parser.add_argument(
+        "--kernel", type=int, default=5, help="Kernel size for CNNs"
+    )
+    parser.add_argument(
+        "--growth_factor", type=int, default=2, help="Growth factor for CNNs"
+    )
     args = parser.parse_args()
 
     # os.environ["WANDB_SILENT"] = "true"
@@ -279,7 +296,7 @@ if __name__ == "__main__":
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
         config=vars(parser.parse_args()),
-        mode="online",
+        mode="offline",
         # tags=[f"NewV{i}.{j}.4"],
     )
 

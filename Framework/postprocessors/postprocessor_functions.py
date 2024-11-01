@@ -59,6 +59,4 @@ def plot_data_by_labels(data, saving_path):
     plt.grid()
     plt.xlabel("epochs")
     plt.ylabel("RMSE")
-    plt.legend()
-
     plt.savefig(saving_path)
