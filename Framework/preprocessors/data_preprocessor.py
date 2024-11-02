@@ -76,14 +76,21 @@ class PreprocessorTypes:
         return data_abs
 
     @staticmethod
-    def raw_IQ(original_sequence, raw_data):
+    def raw_IQ(original_sequence, raw_data, max_dim: int = 48):
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+
+        if data.shape[1] > max_dim:
+            data = data[:, :max_dim]
+
         data_real = data.real
         data_imag = data.imag
-        data_real = DataPreprocessorFunctions.split_by_groups_of_n(data_real, 2)
-        data_imag = DataPreprocessorFunctions.split_by_groups_of_n(data_imag, 2)
+        result = np.empty((data_real.shape[0],data_real.shape[1]*2), dtype=data_real.dtype)
+        result[:, 0::2] = data_real
+        result[:, 1::2] = data_imag
 
-        return data_real, data_imag
+        result = np.expand_dims(result, axis=0)
+
+        return result
 
 
 class DataPreprocessor(PreprocessorTypes):
@@ -94,7 +101,8 @@ class DataPreprocessor(PreprocessorTypes):
         self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y),
                                        'abs_only_mean_by_group': lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
                                        'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
-                                       'abs_only_multichannel': lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y)
+                                       'abs_only_multichannel': lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y),
+                                       'raw_IQ': lambda x, y: PreprocessorTypes.raw_IQ(x, y),
                                        }
         self.counters = {"Train": 0,
                          "Valid": 0,
