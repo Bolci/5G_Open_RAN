@@ -9,6 +9,21 @@ import time
 from copy import copy
 
 class DatasetTemplate(Dataset):
+    """
+    A custom dataset template for loading and processing data.
+
+    Attributes:
+        device (str): The device to load the data onto (e.g., 'cuda' or 'cpu').
+        data_path (str): The path to the directory containing the data files.
+        data_names (list): List of data file names in the data_path directory.
+        label (Optional): The label for the dataset.
+        loader_function (Callable): Function to load the data from a file.
+        label_extraction_function (Callable): Function to extract the label from a file name.
+        load_all_data (bool): Flag to indicate whether to load all data into memory.
+        data (torch.Tensor): Tensor containing all loaded data (if load_all_data is True).
+        labels (torch.Tensor): Tensor containing all labels (if load_all_data is True).
+    """
+
     def __init__(self,
                  data_path: str,
                  label: Optional = 0,
@@ -17,6 +32,17 @@ class DatasetTemplate(Dataset):
                  load_all_data: bool = False,
                  device: str = "cuda",
                  ):
+        """
+        Initializes the DatasetTemplate.
+
+        Args:
+            data_path (str): The path to the directory containing the data files.
+            label (Optional): The label for the dataset.
+            loader_f (Callable): Function to load the data from a file.
+            label_extraction_f (Callable): Function to extract the label from a file name.
+            load_all_data (bool): Flag to indicate whether to load all data into memory.
+            device (str): The device to load the data onto (e.g., 'cuda' or 'cpu').
+        """
         self.device = device
         self.data_path = data_path
         self.data_names = os.listdir(data_path)
@@ -31,8 +57,10 @@ class DatasetTemplate(Dataset):
             self.load_data()
 
     def load_data(self):
+        """
+        Loads all data and labels into memory and normalizes the data.
+        """
         for data_name in self.data_names:
-
             data_path = os.path.join(self.data_path, data_name)
             loaded_data = self.loader_function(data_path).float()
             loaded_data = loaded_data.permute(0, 2, 1)
@@ -55,19 +83,32 @@ class DatasetTemplate(Dataset):
         self.labels = self.labels.to(self.device)
 
     def __len__(self):
+        """
+        Returns the number of samples in the dataset.
+
+        Returns:
+            int: The number of samples.
+        """
         if self.load_all_data:
             return len(self.data)
         else:
             return len(self.data_names)
 
     def __getitem__(self, idx):
+        """
+        Retrieves a sample and its label by index.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the data and the label.
+        """
         if self.load_all_data:
-            data = self.data[idx,:, :]
+            data = self.data[idx, :, :]
             label = self.labels[idx]
             return data, label
-
         else:
-
             data_name = self.data_names[idx]
             label = self.label_extraction_function(data_name)
 
@@ -77,6 +118,6 @@ class DatasetTemplate(Dataset):
 
             v_min, v_max = loaded_data.min(), loaded_data.max()
             new_min, new_max = 0.0, 1.0
-            loaded_data = (loaded_data - v_min)/(v_max - v_min)*(new_max - new_min) + new_min
+            loaded_data = (loaded_data - v_min) / (v_max - v_min) * (new_max - new_min) + new_min
 
             return loaded_data, label

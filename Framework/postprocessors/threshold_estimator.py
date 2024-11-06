@@ -7,13 +7,56 @@ from typing import Callable
 
 
 class ThresholdEstimator(PostprocessorGeneral):
+    """
+    A class used to estimate the threshold for classification scores.
+
+    Methods
+    -------
+    get_threshold_limits(use_epochs: int = 1)
+        Calculates the minimum and maximum threshold limits based on training and validation scores.
+
+    calculate_values_for_threshold_diagram(data: int, no_steps_to_estimate: int, use_epochs: int)
+        Calculates the classification scores over a range of threshold values.
+
+    estimate_threshold(classification_score_over_thresholds, threshold_values)
+        Estimates the optimal threshold based on classification scores.
+
+    get_score_on_test_data(test_loop: Callable, use_epochs: int, no_steps_to_estimate: int)
+        Gets the classification score on test data using the estimated threshold.
+
+    estimate_decision_lines(use_epochs: int = 5, no_steps_to_estimate: int = 200, prepare_figs: bool = False, save_figs: bool = False, figs_label: str = "")
+        Estimates the decision lines for classification and optionally prepares and saves figures.
+
+    test(testing_loop, use_epochs: int = 5, no_steps_to_estimate: int = 200, prepare_figs: bool = False, save_figs: bool = False, figs_label: str = "")
+        Tests the model using the estimated threshold and optionally prepares and saves figures.
+
+    get_fig(results_scores, score_in_threshold, saving_label: str = 'fig', save_fig: bool = True)
+        Generates and optionally saves a figure showing the classification scores over threshold values.
+    """
+
     def __init__(self):
+        """
+        Initializes the ThresholdEstimator with default values.
+        """
         super().__init__()
 
         self.classification_score_over_thresholds_valid = None
         self.threshold_values = None
 
-    def get_threshold_limits(self, use_epochs:int = 1):
+    def get_threshold_limits(self, use_epochs: int = 1):
+        """
+        Calculates the minimum and maximum threshold limits based on training and validation scores.
+
+        Parameters
+        ----------
+        use_epochs : int, optional
+            The number of epochs to use for calculating the scores (default is 1).
+
+        Returns
+        -------
+        tuple
+            A tuple containing the minimum and maximum threshold limits.
+        """
         train_over_epoch, _ = self.load_files_over_epochs()
         valid_over_epoch_class_0, valid_over_epoch_class_1 = self.load_and_parse_valid_per_batch_per_epoch()
 
@@ -30,6 +73,23 @@ class ThresholdEstimator(PostprocessorGeneral):
         return min_score, max_score
 
     def calculate_values_for_threshold_diagram(self, data: int, no_steps_to_estimate: int, use_epochs: int):
+        """
+        Calculates the classification scores over a range of threshold values.
+
+        Parameters
+        ----------
+        data : int
+            The data to be used for calculating the scores.
+        no_steps_to_estimate : int
+            The number of steps to estimate the threshold values.
+        use_epochs : int
+            The number of epochs to use for calculating the scores.
+
+        Returns
+        -------
+        tuple
+            A tuple containing arrays of classification scores and boundary scores.
+        """
         min_score, max_score = self.get_threshold_limits(use_epochs=use_epochs)
         ds = (max_score - min_score) / no_steps_to_estimate
 
@@ -55,6 +115,21 @@ class ThresholdEstimator(PostprocessorGeneral):
 
     @staticmethod
     def estimate_threshold(classification_score_over_thresholds, threshold_values):
+        """
+        Estimates the optimal threshold based on classification scores.
+
+        Parameters
+        ----------
+        classification_score_over_thresholds : array
+            The classification scores over different threshold values.
+        threshold_values : array
+            The threshold values.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the optimal threshold and the corresponding classification score.
+        """
         idx_max = np.argmax(classification_score_over_thresholds)
         threshold = threshold_values[idx_max]
         classification_score = classification_score_over_thresholds[idx_max]
@@ -63,9 +138,24 @@ class ThresholdEstimator(PostprocessorGeneral):
     def get_score_on_test_data(self,
                                test_loop: Callable,
                                use_epochs: int,
-                               no_steps_to_estimate: int,
-                              ):
+                               no_steps_to_estimate: int):
+        """
+        Gets the classification score on test data using the estimated threshold.
 
+        Parameters
+        ----------
+        test_loop : Callable
+            The function to be used for testing.
+        use_epochs : int
+            The number of epochs to use for calculating the scores.
+        no_steps_to_estimate : int
+            The number of steps to estimate the threshold values.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the classification score on test data, classification scores over threshold values, and threshold values.
+        """
         if self.measured_decision_line is None:
             raise Exception('Threshold has not been estimated yet')
 
@@ -78,14 +168,33 @@ class ThresholdEstimator(PostprocessorGeneral):
 
         return classification_score_test, classification_score_over_threshold_test, threshold_values
 
-
     def estimate_decision_lines(self,
-                                use_epochs:int = 5,
-                                no_steps_to_estimate:int = 200,
+                                use_epochs: int = 5,
+                                no_steps_to_estimate: int = 200,
                                 prepare_figs: bool = False,
                                 save_figs: bool = False,
-                                figs_label: str = "",
-                                ):
+                                figs_label: str = ""):
+        """
+        Estimates the decision lines for classification and optionally prepares and saves figures.
+
+        Parameters
+        ----------
+        use_epochs : int, optional
+            The number of epochs to use for calculating the scores (default is 5).
+        no_steps_to_estimate : int, optional
+            The number of steps to estimate the threshold values (default is 200).
+        prepare_figs : bool, optional
+            Whether to prepare figures (default is False).
+        save_figs : bool, optional
+            Whether to save figures (default is False).
+        figs_label : str, optional
+            The label to use for saving figures (default is "").
+
+        Returns
+        -------
+        tuple
+            A tuple containing the estimated threshold and the corresponding classification score.
+        """
         train_scores, valid_scores = self.load_files_final_metrics()
 
         classification_score_over_thresholds, threshold_values = self.calculate_values_for_threshold_diagram(
@@ -114,9 +223,30 @@ class ThresholdEstimator(PostprocessorGeneral):
              no_steps_to_estimate: int = 200,
              prepare_figs: bool = False,
              save_figs: bool = False,
-             figs_label: str = "",
-             ):
+             figs_label: str = ""):
+        """
+        Tests the model using the estimated threshold and optionally prepares and saves figures.
 
+        Parameters
+        ----------
+        testing_loop : Callable
+            The function to be used for testing.
+        use_epochs : int, optional
+            The number of epochs to use for calculating the scores (default is 5).
+        no_steps_to_estimate : int, optional
+            The number of steps to estimate the threshold values (default is 200).
+        prepare_figs : bool, optional
+            Whether to prepare figures (default is False).
+        save_figs : bool, optional
+            Whether to save figures (default is False).
+        figs_label : str, optional
+            The label to use for saving figures (default is "").
+
+        Returns
+        -------
+        float
+            The classification score on test data.
+        """
         (classification_score_on_test,
          classification_score_over_threshold_test,
          threshold_values_test) = self.get_score_on_test_data(test_loop=testing_loop,
@@ -137,7 +267,20 @@ class ThresholdEstimator(PostprocessorGeneral):
                 score_in_threshold,
                 saving_label: str = 'fig',
                 save_fig: bool = True):
+        """
+        Generates and optionally saves a figure showing the classification scores over threshold values.
 
+        Parameters
+        ----------
+        results_scores : array
+            The classification scores over different threshold values.
+        score_in_threshold : float
+            The classification score at the estimated threshold.
+        saving_label : str, optional
+            The label to use for saving the figure (default is 'fig').
+        save_fig : bool, optional
+            Whether to save the figure (default is True).
+        """
         fig, ax = plt.subplots()
         ax.vlines(self.measured_decision_line, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color='blue',
                   label='valid_threshold', linewidth=2.0)
