@@ -1,13 +1,31 @@
-# This script contains important loops for the development pipeline
-
 import torch
 import numpy as np
 from copy import copy
 import torch.nn as nn
 from typing import Callable
 
-
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
+    """
+    Trains the model for one epoch.
+
+    Parameters
+    ----------
+    dataloader : DataLoader
+        The DataLoader for the training data.
+    model : nn.Module
+        The model to be trained.
+    loss_fn : Callable
+        The loss function.
+    optimizer : torch.optim.Optimizer
+        The optimizer.
+    device : str, optional
+        The device to use for training (default is "cuda").
+
+    Returns
+    -------
+    float
+        The average training loss.
+    """
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     train_loss = 0.0
@@ -32,8 +50,28 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     train_loss /= num_batches
     return train_loss
 
+def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
+    """
+    Validates the model.
 
-def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
+    Parameters
+    ----------
+    dataloader : DataLoader
+        The DataLoader for the validation data.
+    model : nn.Module
+        The model to be validated.
+    loss_fn : Callable
+        The loss function.
+    device : str, optional
+        The device to use for validation (default is "cuda").
+    is_train : bool, optional
+        Whether the validation is being done during training (default is False).
+
+    Returns
+    -------
+    tuple
+        The mean validation loss, a list of losses to print, and a list of score losses.
+    """
     test_losses_to_print = []
     test_losses_score = []
 
@@ -52,12 +90,28 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train = False):
 
     return test_loss_mean, test_losses_to_print, test_losses_score
 
-def test_loop(dataloader_test,
-              model: nn.Module,
-              loss_fn,
-              threshold: int,
-              device="cuda"):
+def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
+    """
+    Tests the model.
 
+    Parameters
+    ----------
+    dataloader_test : DataLoader
+        The DataLoader for the test data.
+    model : nn.Module
+        The model to be tested.
+    loss_fn : Callable
+        The loss function.
+    threshold : int
+        The threshold for classification.
+    device : str, optional
+        The device to use for testing (default is "cuda").
+
+    Returns
+    -------
+    tuple
+        The classification score and a list of predicted results.
+    """
     predicted_results = []
 
     no_samples = len(dataloader_test)
