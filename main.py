@@ -12,36 +12,34 @@ from Framework.Model_bank.autoencoder_cnn import (
 )
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.Model_bank.transformer_ae import TransformerAutoencoder
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
-from Framework.postprocessors.postprocessor_functions import (
-    plot_data_by_labels,
-    mean_labels_over_epochs,
-)
-from Framework.postprocessors.postprocesor import Postprocessor
+from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
+from Framework.postprocessors.tester import Tester
+from Framework.postprocessors.postprocessor_utils import get_print_message
 import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim.lr_scheduler as lr_scheduler
 import wandb
-import datetime
 
-def train_with_hp_setup(
-    datasets, model, batch_size, learning_rate, no_epochs, device, criterion
-):
+
+def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.LinearLR(
-        optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs // 2
-    )
+    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
+
 
     model.to(device)
     criterion.to(device)
 
-    # do one validation loop to ini everything
-    _, _, _ = valid_loop(
-        dataloaders["Valid"][0], model, criterion, device=device
-    )
+    #do one validation loop to ini everything
+    _, _, _ = valid_loop(dataloaders['Valid'][0],
+                      model,
+                      criterion,
+                      device=device)
 
     train_loss_mean_save = []
     valid_loss_mean_save = []
@@ -50,82 +48,67 @@ def train_with_hp_setup(
         print(f"Epoch {epoch + 1}\n-------------------------------")
 
         model.train()
-        train_loss = train_loop(
-            dataloaders["Train"][0], model, criterion, optimizer, device=device
-        )
+        train_loss = train_loop(dataloaders['Train'][0],
+                                model,
+                                criterion,
+                                optimizer,
+                                device=device)
         before_lr = optimizer.param_groups[0]["lr"]
         scheduler.step()
-        # after_lr = optimizer.param_groups[0]["lr"]
-        # print("Epoch %d: SGD lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
+        after_lr = optimizer.param_groups[0]["lr"]
+        print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
         model.eval()
-        valid_loss_mean, valid_loss_all, _ = valid_loop(
-            dataloaders["Valid"][0], model, criterion, device=device
-        )
+        valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
+                                                        model,
+                                                        criterion,
+                                                        device=device)
 
-        wandb.log(
-            {
-                "train_loss": train_loss,
-                "val_loss": valid_loss_mean,
-                "lr": before_lr,
-                "epoch": epoch,
-            }
-        )
+        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
 
     model.eval()
-    _, _, train_dist_score = valid_loop(
-        dataloaders["Train"][0], model, criterion, device=device, is_train=True
-    )
+    _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
+                                                 model,
+                                                 criterion,
+                                                 device=device,
+                                                 is_train=True)
 
-    return (
-        train_loss_mean_save,
-        valid_loss_mean_save,
-        valid_loss_all_save,
-        train_dist_score,
-    )
+
+    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score
+
 
 
 def main(path, args):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # Dataset_paths
     all_paths = get_all_paths(path)
 
-    # Data preparing according to preprocessing
+    #Data preparing according to preprocessing
     data_preprocessor = DataPreprocessor()
     data_preprocessor.set_cache_path(path["Data_cache_path"])
     data_preprocessor.set_original_seg(path["True_sequence_path"])
 
-    paths_for_datasets = data_preprocessor.preprocess_data(
-        all_paths, args.preprocesing_type, rewrite_data=True, merge_files=True
-    )
+    paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
+                                                           args.preprocesing_type,
+                                                           rewrite_data = True,
+                                                           merge_files = True)
 
-    # prepare datasets and data_loaders
+    #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
     # model = CNNAutoencoderV2(dropout=args.dropout)
     # model = CNNAEV2(48)
     model = TransformerAutoencoder(input_dim=72, embed_dim=64, num_heads=2, num_layers=2)
     criterion = RMSELoss()
 
-    (
-        train_loss_mean_save,
-        valid_loss_mean_save,
-        valid_loss_all_save,
-        train_dist_score,
-    ) = train_with_hp_setup(
-        datasets,
-        model,
-        args.batch_size,
-        args.learning_rate,
-        args.epochs,
-        device,
-        criterion,
-    )
+    train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
+        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
 
-    valid_metrics = mean_labels_over_epochs(valid_loss_all_save)
+    valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
+
 
     #preparing saving paths
     now = datetime.datetime.now()
@@ -137,31 +120,28 @@ def main(path, args):
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
-    # file_names
-    train_over_epoch = "train_over_epoch.txt"
-    valid_over_epoch = "valid_over_epoch.txt"
-    valid_over_epoch_over_batch_with_labels = "valid_epochs_labels.txt"
-    train_final_score_per_batch = "train_final_per_batch.txt"
+    #file_names
+    train_over_epoch = 'train_over_epoch.txt'
+    valid_over_epoch = 'valid_over_epoch.txt'
+    valid_over_epoch_over_batch_with_labels = 'valid_epochs_labels.txt'
+    train_final_score_per_batch = 'train_final_per_batch.txt'
 
-    # saving metrics
+    #saving metrics
     path_training_over_epochs = os.path.join(saving_path, train_over_epoch)
     save_txt(path_training_over_epochs, train_loss_mean_save)
     path_valid_over_epochs = os.path.join(saving_path, valid_over_epoch)
     save_txt(path_valid_over_epochs, valid_loss_mean_save)
-    path_valid_epochs_labels = os.path.join(
-        saving_path, valid_over_epoch_over_batch_with_labels
-    )
+    path_valid_epochs_labels = os.path.join(saving_path, valid_over_epoch_over_batch_with_labels)
     save_txt(path_valid_epochs_labels, valid_loss_all_save)
-    path_train_final_per_batch = os.path.join(
-        saving_path, train_final_score_per_batch
-    )
+    path_train_final_per_batch = os.path.join(saving_path, train_final_score_per_batch)
     save_txt(path_train_final_per_batch, train_dist_score)
 
-    # saving loss over epochs
+
+    #saving loss over epochs
     plt.figure()
-    plt.plot(train_loss_mean_save, label="Train")
-    plt.plot(valid_loss_mean_save, label="Valid")
-    fig_path = os.path.join(saving_path, "fig_1_train_valid.png")
+    plt.plot(train_loss_mean_save, label='Train')
+    plt.plot(valid_loss_mean_save, label='Valid')
+    fig_path = os.path.join(saving_path, 'fig_1_train_valid.png')
     plt.xlabel("epochs")
     plt.ylabel("RMSE")
     plt.grid()
@@ -169,10 +149,10 @@ def main(path, args):
     plt.savefig(fig_path)
 
     plt.figure()
-    plt.plot(train_loss_mean_save, label="Train")
-    plt.plot(valid_metrics["Class_0"], label="Valid_class_0")
-    plt.plot(valid_metrics["Class_1"], label="Valid_class_1")
-    fig_path = os.path.join(saving_path, "fig_1_train_valid_labels.png")
+    plt.plot(train_loss_mean_save, label='Train')
+    plt.plot(valid_metrics['Class_0'], label='Valid_class_0')
+    plt.plot(valid_metrics['Class_1'], label='Valid_class_1')
+    fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels.png')
     plt.xlabel("epochs")
     plt.ylabel("RMSE")
     plt.grid()
@@ -180,91 +160,63 @@ def main(path, args):
     plt.savefig(fig_path)
 
     plt.figure()
-    plt.plot(
-        np.arange(len(train_loss_mean_save))[10:],
-        train_loss_mean_save[10:],
-        label="Train",
-    )
-    plt.plot(
-        np.arange(len(train_loss_mean_save))[10:],
-        valid_metrics["Class_0"][10:],
-        label="Valid_class_0",
-    )
-    plt.plot(
-        np.arange(len(train_loss_mean_save))[10:],
-        valid_metrics["Class_1"][10:],
-        label="Valid_class_1",
-    )
-    fig_path = os.path.join(saving_path, "fig_1_train_valid_labels_zoomed.png")
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], train_loss_mean_save[10:], label='Train')
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_0'][10:], label='Valid_class_0')
+    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_1'][10:], label='Valid_class_1')
+    fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels_zoomed.png')
     plt.xlabel("epochs")
     plt.ylabel("RMSE")
     plt.grid()
     plt.legend()
     plt.savefig(fig_path)
 
-    # save model
-    model_path = os.path.join(saving_path, "model.pt")
+    #save model
+    model_path = os.path.join(saving_path, 'model.pt')
     torch.save(model.state_dict(), model_path)
 
-    # valid_graph
-    sv_path = os.path.join(saving_path, "valid_graph.png")
+    #valid_graph
+    sv_path = os.path.join(saving_path, 'valid_graph.png')
     plot_data_by_labels(valid_loss_all_save, sv_path)
 
-    # testing loop
-    post_processor = Postprocessor()
-    post_processor.set_paths(
-        result_folder_path=path["Saving_path"],
-        attempt_name=saving_folder_name,
-        train_score_over_epoch_file_name=train_over_epoch,
-        valid_score_over_epoch_file_name=valid_over_epoch,
-        valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
-        train_score_final_file_name=train_final_score_per_batch,
-    )
 
-    threshold, classification_score, _ = (
-        post_processor.estimate_threshold_on_valid_data()
-    )
-    test_dataloader = datasets["Test"][0]
+    #testing loop
+    tester = Tester(result_folder_path=path['Saving_path'],
+                    attempt_name=saving_folder_name,
+                    train_score_over_epoch_file_name=train_over_epoch,
+                    valid_score_over_epoch_file_name=valid_over_epoch,
+                    valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
+                    train_score_final_file_name=train_final_score_per_batch)
 
-    model.eval()
-    testing_loop = lambda: test_loop(
-        test_dataloader, model, criterion, threshold, device=device
-    )
-    (
-        classification_score_test_0,
-        classification_score_test_1,
-        predicted_results,
-        fig,
-    ) = post_processor.test_data(threshold, testing_loop)
-    print(
-        f"Classification score valid {classification_score}, classification score test = {classification_score_test_0, classification_score_test_1}"
-    )
+    #test data loader and loop
+    test_dataloader = datasets['Test'][0]
+    testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 
-    wandb.log(
-        {
-            "Classification_score_valid": classification_score,
-            "classification_score_test_0": classification_score_test_0,
-            "classification_score_test_1": classification_score_test_1,
-            "Threshold": threshold,
-            "Directory": saving_folder_name,
-        }
-    )
+    valid_scores = tester.estimate_decision_lines()
+    print('Validation scores is:')
+    print(valid_scores)
 
+    test_scores = tester.test_data(testing_loop=testing_loop)
+    print('Test scores is:')
+    print(test_scores)
+
+
+    for tester_label, single_scores in test_scores.items():
+        for single_scores_type_label, single_score_type_value in test_scores.items():
+            wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
     wandb.finish()
 
 
 if __name__ == "__main__":
-    # wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
-    paths_config = load_json_as_dict("./data_paths.json")
+    #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
+    paths_config = load_json_as_dict('./data_paths.json')
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=15, help="Number of epochs"
+        "--epochs", type=int, default=5, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=163420, help="Batch size"
+        "--batch_size", type=int, default=32, help="Batch size"
     )
-    parser.add_argument("--dropout", type=float, default=0.1, help="Dropout ")
     parser.add_argument(
         "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
@@ -272,22 +224,7 @@ if __name__ == "__main__":
         "--log_interval", type=int, default=1, help="Log interval"
     )
     parser.add_argument(
-        "--preprocesing_type",
-        type=str,
-        default="abs_only_multichannel",
-        help="Log interval",
-    )
-    parser.add_argument(
-        "--layers", type=int, default=2, help="Layers in CNNs"
-    )
-    parser.add_argument(
-        "--init_channels", type=int, default=2, help="Initial channels"
-    )
-    parser.add_argument(
-        "--kernel", type=int, default=5, help="Kernel size for CNNs"
-    )
-    parser.add_argument(
-        "--growth_factor", type=int, default=2, help="Growth factor for CNNs"
+        "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
     )
     args = parser.parse_args()
 
@@ -296,7 +233,7 @@ if __name__ == "__main__":
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
         config=vars(parser.parse_args()),
-        mode="offline",
+        mode="online",
         # tags=[f"NewV{i}.{j}.4"],
     )
 

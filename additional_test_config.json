@@ -1,0 +1,7 @@
+{
+  "Data_path": "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Data/Data_raw",
+  "Test_folders": "test_meas2",
+  "Data_cache_path": "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Data/Data_prepared",
+  "True_sequence_path" : "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Data/rxGridSSBurstIdeal.mat",
+  "Saving_path": "/home/bolci/Documents/Projekty/5G_OPEN_RAN/Anomaly_detection/5G_Open_RAN/Results/"
+}

@@ -16,6 +16,7 @@ class CNNAEV2(nn.Module):
             CNN_Block_1D(16, 32),
             nn.Dropout(0.2),
             CNN_Block_1D(32, 64),
+
         )
 
         # Decoder: Upsample back to the original sequence

@@ -119,7 +119,6 @@ class DatasetTemplate(Dataset):
             # Retrieve data and label from memory
             data = self.data[idx, :, :]
             label = self.labels[idx]
-
             return data, label
 
         else:

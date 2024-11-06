@@ -8,32 +8,19 @@ from pathlib import Path
 
 
 class PreprocessorTypes:
-    """
-    Namespace of functions that manage the sequences to preprocess data.
+    '''
+    namespace of functions that manages the sequnces to preprocess data, current_preprocessings:
+    abs_only -
+    abs_only_by_one -
+    abs_only_mean_by_group -
+    abs_and_phase -
+    abs_only_multichannel -
+    raw_IQ -
 
-    Current preprocessings:
-        - abs_only
-        - abs_only_by_one
-        - abs_only_mean_by_group
-        - abs_and_phase
-        - abs_only_multichannel
-        - raw_IQ
-
-    Expected return format: (N, d, C) - number of data, length of data, number of channels of data.
-    """
-
+    expected return_format (N, d, C) - no. of data,  lenght of data, no channels of data
+    '''
     @staticmethod
     def abs_only(original_sequence, raw_data):
-        """
-        Preprocesses the data by taking the absolute value, converting to log scale, and splitting by groups of 2.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed data.
-        """
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data = np.abs(data)
         data = DataPreprocessorFunctions.to_log(data)
@@ -42,16 +29,6 @@ class PreprocessorTypes:
 
     @staticmethod
     def abs_only_by_one(original_sequence, raw_data):
-        """
-        Preprocesses the data by taking the absolute value, converting to log scale, and splitting by groups of 1.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed data.
-        """
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data = np.abs(data)
         data = DataPreprocessorFunctions.to_log(data)
@@ -60,16 +37,6 @@ class PreprocessorTypes:
 
     @staticmethod
     def abs_only_mean_by_group(original_sequence, raw_data):
-        """
-        Preprocesses the data by taking the absolute value, converting to log scale, and averaging by quarters along axis 2.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed data.
-        """
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data = np.abs(data)
         data = DataPreprocessorFunctions.to_log(data)
@@ -80,16 +47,6 @@ class PreprocessorTypes:
 
     @staticmethod
     def abs_and_phase(original_sequence, raw_data):
-        """
-        Preprocesses the data by taking the absolute value and phase, converting to log scale, and splitting by groups of 2.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed data concatenated along the first axis.
-        """
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data_abs = np.abs(data)
         data_abs = DataPreprocessorFunctions.to_log(data_abs)
@@ -102,17 +59,6 @@ class PreprocessorTypes:
 
     @staticmethod
     def abs_only_multichannel(original_sequence, raw_data, max_dim: int = 48):
-        """
-        Preprocesses the data by taking the absolute value, converting to log scale, and ensuring the data has a maximum dimension.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-            max_dim (int): The maximum dimension of the data. Defaults to 48.
-
-        Returns:
-            np.ndarray: The preprocessed data.
-        """
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
         data_abs = np.abs(data).astype(np.float32)
         data_abs = DataPreprocessorFunctions.to_log(data_abs)
@@ -130,78 +76,49 @@ class PreprocessorTypes:
         return data_abs
 
     @staticmethod
-    def raw_IQ(original_sequence, raw_data):
-        """
-        Preprocesses the data by splitting the real and imaginary parts by groups of 2.
-
-        Args:
-            original_sequence: The original sequence of the data.
-            raw_data: The raw data to preprocess.
-
-        Returns:
-            tuple: The preprocessed real and imaginary parts of the data.
-        """
+    def raw_IQ(original_sequence, raw_data, max_dim: int = 48):
         data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+
+        if data.shape[1] > max_dim:
+            data = data[:, :max_dim]
+
         data_real = data.real
         data_imag = data.imag
-        data_real = DataPreprocessorFunctions.split_by_groups_of_n(data_real, 2)
-        data_imag = DataPreprocessorFunctions.split_by_groups_of_n(data_imag, 2)
+        result = np.empty((data_real.shape[0],data_real.shape[1]*2), dtype=data_real.dtype)
+        result[:, 0::2] = data_real
+        result[:, 1::2] = data_imag
 
-        return data_real, data_imag
+        result = np.expand_dims(result, axis=0)
+
+        return result
 
 
 class DataPreprocessor(PreprocessorTypes):
-    """
-    DataPreprocessor class that extends PreprocessorTypes to handle data preprocessing tasks.
-    """
-
     def __init__(self):
-        """
-        Initializes the DataPreprocessor object.
-        """
         super().__init__()
         self.data_cache_path = None
         self.original_seq = []
-        self.possible_preprocessing = {
-            "abs_only": lambda x, y: PreprocessorTypes.abs_only(x, y),
-            "abs_only_mean_by_group": lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
-            "abs_only_by_one_sample": lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
-            "abs_only_multichannel": lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y),
-        }
-        self.counters = {"Train": 0, "Valid": 0, "Test": 0}
-        self.paths_for_datasets = {"Train": [], "Test": [], "Valid": []}
+        self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y),
+                                       'abs_only_mean_by_group': lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
+                                       'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
+                                       'abs_only_multichannel': lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y),
+                                       'raw_IQ': lambda x, y: PreprocessorTypes.raw_IQ(x, y),
+                                       }
+        self.counters = {"Train": 0,
+                         "Valid": 0,
+                         "Test": 0}
+        self.paths_for_datasets = {'Train': [], 'Test': [], 'Valid': []}
 
     def set_cache_path(self, path: str) -> None:
-        """
-        Sets the cache path for storing preprocessed data.
-
-        Args:
-            path (str): The path to set as the cache path.
-        """
         self.data_cache_path = path
 
     def set_original_seg(self, path: str) -> None:
-        """
-        Sets the original sequence from a .mat file.
-
-        Args:
-            path (str): The path to the .mat file.
-        """
         mat_file = load_mat_file(path)
-        pss_sss_raw = mat_file["rxGridSSBurst"]
+        pss_sss_raw = mat_file['rxGridSSBurst']
         pss_sss_raw = DataPreprocessorFunctions.mean_by_quaters(pss_sss_raw)
         self.original_seq = pss_sss_raw
 
     def prepare_saving_path(self, saving_folder_name: str) -> str:
-        """
-        Prepares the saving path for preprocessed data.
-
-        Args:
-            saving_folder_name (str): The name of the folder to save the preprocessed data.
-
-        Returns:
-            str: The full path to the saving folder.
-        """
         # full_path = os.path.join(self.data_cache_path, saving_folder_name)
         full_path = saving_folder_name
         if not os.path.exists(full_path):
@@ -211,40 +128,19 @@ class DataPreprocessor(PreprocessorTypes):
 
     @staticmethod
     def get_label(criteria: str) -> int:
-        """
-        Gets the label based on the criteria.
-
-        Args:
-            criteria (str): The criteria to determine the label.
-
-        Returns:
-            int: The label (0 or 1).
-        """
         label = 0
-        if "wPA" in criteria:
+        if 'wPA' in criteria:
             label = 1
         return label
 
-    def preprocess_folder(
-        self,
-        data_type: str,
-        source_folder_path: str,
-        preprocessing_type: str,
-        label: int,
-        full_saving_path: str,
-        merge_files: bool = False,
-    ) -> None:
-        """
-        Preprocesses all files in a folder and saves the preprocessed data.
+    def preprocess_folder(self,
+                          data_type: str,
+                          source_folder_path: str,
+                          preprocessing_type:str,
+                          label: int,
+                          full_saving_path: str,
+                          merge_files: bool = False) -> None:
 
-        Args:
-            data_type (str): The type of data (Train, Valid, Test).
-            source_folder_path (str): The path to the source folder containing the data files.
-            preprocessing_type (str): The type of preprocessing to apply.
-            label (int): The label to assign to the preprocessed data.
-            full_saving_path (str): The full path to save the preprocessed data.
-            merge_files (bool): Whether to merge all files into a single file. Defaults to False.
-        """
         all_files = os.listdir(source_folder_path)
         if merge_files:
             single_matrix = None
@@ -258,7 +154,7 @@ class DataPreprocessor(PreprocessorTypes):
                 else:
                     single_matrix = np.concatenate((single_matrix, preprocessed_data), axis=0)
 
-            file_path = os.path.join(full_saving_path, f"file_{self.counters[data_type]}_label={label}.pt")
+            file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
             single_processed_data_torch = torch.Tensor(single_matrix)
             torch.save(single_processed_data_torch, file_path)
 
@@ -269,38 +165,24 @@ class DataPreprocessor(PreprocessorTypes):
                 preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
 
                 for single_processed_data in preprocessed_data:
-                    file_path = os.path.join(full_saving_path, f"file_{self.counters[data_type]}_label={label}.pt")
+
+                    file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
                     single_processed_data_torch = torch.Tensor(single_processed_data)
                     torch.save(single_processed_data_torch, file_path)
 
                     self.counters[data_type] += 1
 
-    def preprocess_data(
-        self,
-        data_paths: dict,
-        preprocessing_type: str,
-        mix_valid: bool = True,
-        mix_test: bool = True,
-        rewrite_data: bool = False,
-        merge_files: bool = False,
-        additional_folder_label: str = "",
-    ) -> dict:
-        """
-        Preprocesses data from multiple paths and saves the preprocessed data.
 
-        Args:
-            data_paths (dict): A dictionary containing data paths for Train, Valid, and Test datasets.
-            preprocessing_type (str): The type of preprocessing to apply.
-            mix_valid (bool): Whether to mix validation data. Defaults to True.
-            mix_test (bool): Whether to mix test data. Defaults to True.
-            rewrite_data (bool): Whether to rewrite existing data. Defaults to False.
-            merge_files (bool): Whether to merge all files into a single file. Defaults to False.
-            additional_folder_label (str): An additional label to add to the folder name. Defaults to "".
+    def preprocess_data(self,
+                        data_paths: dict,
+                        preprocessing_type: str,
+                        mix_valid: bool = True,
+                        mix_test: bool = True,
+                        rewrite_data: bool = False,
+                        merge_files: bool = False,
+                        additional_folder_label: str = '') -> dict:
 
-        Returns:
-            dict: A dictionary containing paths for the preprocessed datasets.
-        """
-        if self.data_cache_path is None:
+        if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
 
         if len(self.original_seq) == 0:
@@ -312,39 +194,29 @@ class DataPreprocessor(PreprocessorTypes):
                 label = self.get_label(measurement_folder)
 
                 mix_bool = False
-                if data_type == "Valid" and mix_valid:
+                if data_type == 'Valid' and mix_valid:
                     mix_bool = True
 
-                if data_type == "Test" and mix_test:
+                if data_type == 'Test' and mix_test:
                     mix_bool = True
 
                 if not mix_bool:
-                    path_data_folder = os.path.join(
-                        self.data_cache_path,
-                        f"{preprocessing_type}{additional_folder_label}",
-                        data_type,
-                        measurement_folder,
-                    )
+                    path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type,
+                                                    measurement_folder)
                 else:
-                    path_data_folder = os.path.join(
-                        self.data_cache_path,
-                        f"{preprocessing_type}{additional_folder_label}",
-                        data_type,
-                    )
+                    path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type)
 
                 full_data_path = self.prepare_saving_path(path_data_folder)
 
-                if full_data_path not in self.paths_for_datasets[data_type]:
+                if not full_data_path in self.paths_for_datasets[data_type]:
                     self.paths_for_datasets[data_type].append(full_data_path)
 
                 if rewrite_data:
-                    self.preprocess_folder(
-                        data_type=data_type,
-                        source_folder_path=single_path,
-                        preprocessing_type=preprocessing_type,
-                        label=label,
-                        full_saving_path=full_data_path,
-                        merge_files=merge_files,
-                    )
+                    self.preprocess_folder(data_type=data_type,
+                                           source_folder_path=single_path,
+                                           preprocessing_type=preprocessing_type,
+                                           label=label,
+                                           full_saving_path= full_data_path,
+                                           merge_files=merge_files)
 
         return self.paths_for_datasets
