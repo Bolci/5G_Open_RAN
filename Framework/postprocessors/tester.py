@@ -24,6 +24,9 @@ class TesterFactory:
 
 
 class Tester:
+    """
+        A class to handle testing and estimation of decision lines using different postprocessors.
+    """
     def __init__(self,
                  result_folder_path: str,
                  attempt_name: str,
@@ -63,6 +66,7 @@ class Tester:
                                 save_figs: bool = True,
                                 figs_label: str = "valid_scores_over_threshold"
                                 ) -> dict:
+
         valid_scores = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
             threshold, classification_score = single_tester.estimate_decision_lines(use_epochs=use_epochs,
@@ -81,7 +85,7 @@ class Tester:
                   prepare_figs: bool = True,
                   save_figs: bool = True,
                   figs_label: str = "test_scores_over_threshold") -> dict:
-        
+
         testing_scores = {}
 
         for single_tester_name, single_tester in self.tester_buffer.items():
