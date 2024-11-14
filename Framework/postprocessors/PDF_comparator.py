@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KernelDensity
 from sklearn.utils.extmath import density
+
+from Framework.loops.loops import test_loop
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from typing import Callable
 from copy import copy
@@ -93,6 +95,7 @@ class PDFComparator(PostprocessorGeneral):
 
         #train_values, figs = self.estimate_pdf_on_train()
         #valid_values_class_0, valid_values_class_1 = self.estimate_pdf_on_valid()
+
 
 
         classification_score_valid = None

@@ -1,5 +1,6 @@
 from Framework.postprocessors.threshold_estimator import ThresholdEstimator
 from Framework.postprocessors.PDF_comparator import PDFComparator
+from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax
 
 import matplotlib.pyplot as plt
 from typing import Callable
@@ -38,9 +39,27 @@ class Tester:
                                  valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
                                  train_score_final_file_name=train_score_final_file_name)
 
-        self.tester_buffer = {'threshold_estimator': threshold_estimator,
-                              'pdf_comparator': pdf_comparator}
+        interval_estimator = IntervalEstimatorMinMax()
+        interval_estimator.set_paths(result_folder_path=result_folder_path,
+                                     attempt_name=attempt_name,
+                                     train_score_over_epoch_file_name=train_score_over_epoch_file_name,
+                                     valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
+                                     valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
+                                     train_score_final_file_name=train_score_final_file_name)
 
+        interval_estimatorstd = IntervalEstimatorStd()
+        interval_estimatorstd.set_paths(result_folder_path=result_folder_path,
+                                     attempt_name=attempt_name,
+                                     train_score_over_epoch_file_name=train_score_over_epoch_file_name,
+                                     valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
+                                     valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
+                                     train_score_final_file_name=train_score_final_file_name)
+
+        #self.tester_buffer = {'threshold_estimator': threshold_estimator,
+        #                      'pdf_comparator': pdf_comparator,
+        #                      'interval_estimator': interval_estimator}
+        self.tester_buffer = {'interval_estimator_min_max': interval_estimator,
+                              'interval_estimator_std': interval_estimatorstd}
 
     def estimate_decision_lines(self,
                                 use_epochs: int = 1,

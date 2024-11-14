@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from copy import copy
 import torch.nn as nn
+from typing import Callable
 
 
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
@@ -74,8 +75,6 @@ def test_loop(dataloader_test,
             if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
                 counter_var_0 +=1
 
-            #if (test_loss <= threshold and y.item() == 1) or (test_loss > threshold and y.item() == 0):
-            #    counter_var_1 +=1
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
     classification_score_0 = float(counter_var_0)/float(no_samples)
@@ -83,3 +82,30 @@ def test_loop(dataloader_test,
 
     #return classification_score_0, classification_score_1, predicted_results
     return classification_score_0, predicted_results
+
+
+def test_loop_general(dataloader_test,
+              model: nn.Module,
+              loss_fn: Callable,
+              predict_class: Callable,
+              device="cuda"):
+
+    predicted_results = []
+    correct_classification_counter = 0
+    no_samples = len(dataloader_test)
+
+    with torch.no_grad():
+        for X, y in dataloader_test:
+            if not (len(X.shape) == 3):
+                X = X.unsqueeze(dim=0)
+
+            pred = model(X.to(device))
+            test_loss = loss_fn(pred, X).item()
+
+            if y == predict_class(test_loss):
+                correct_classification_counter += 1
+
+            predicted_results.append(([copy(y.item()), copy(test_loss)]))
+
+    classification_score = correct_classification_counter/no_samples
+    return classification_score, predicted_results
