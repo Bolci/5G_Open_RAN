@@ -3,8 +3,10 @@ import torch
 from .data_preprocessor_functions import DataPreprocessorFunctions
 import os
 from ..exceptions.exceptions import DataProcessorException
-from ..utils.utils import load_mat_file
+from ..utils.utils import load_mat_file, chkList, flatten
 from pathlib import Path
+from typing import Callable
+from copy import copy
 
 
 class PreprocessorTypes:
@@ -169,7 +171,13 @@ class DataPreprocessor(PreprocessorTypes):
         self.counters = {"Train": 0,
                          "Valid": 0,
                          "Test": 0}
-        self.paths_for_datasets = {'Train': [], 'Test': [], 'Valid': []}
+
+        #self.paths_for_datasets = {'Train': [], 'Test': [], 'Valid': []}
+
+        self.buffers_train = {'source_paths': [], 'saving_paths' : [], 'labels':[]}
+        self.buffers_valid = {'source_paths': [], 'saving_paths' : [], 'labels':[]}
+        self.buffers_test  = {'source_paths': [], 'saving_paths' : [], 'labels':[]}
+
 
     def set_cache_path(self, path: str) -> None:
         """
@@ -192,7 +200,8 @@ class DataPreprocessor(PreprocessorTypes):
         pss_sss_raw = DataPreprocessorFunctions.mean_by_quaters(pss_sss_raw)
         self.original_seq = pss_sss_raw
 
-    def prepare_saving_path(self, saving_folder_name: str) -> str:
+    @staticmethod
+    def prepare_saving_path(saving_folder_name: str) -> None:
         """
         Prepare the saving path by creating the directory if it does not exist.
 
@@ -202,12 +211,9 @@ class DataPreprocessor(PreprocessorTypes):
         Returns:
             str: The full path to the saving folder.
         """
-        # full_path = os.path.join(self.data_cache_path, saving_folder_name)
         full_path = saving_folder_name
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-
-        return full_path
 
     @staticmethod
     def get_label(criteria: str) -> int:
@@ -231,76 +237,112 @@ class DataPreprocessor(PreprocessorTypes):
 
 
     def preprocess_folder(self,
-                          data_type: str,
-                          source_folder_path: str,
-                          preprocessing_type:str,
-                          label: int,
-                          full_saving_path: str,
-                          merge_files: bool = False) -> None:
-        """
-               Preprocess all files in a folder and save the preprocessed data.
+                          data_type,
+                          buffer,
+                          preprocessing_type,
+                          merge_files):
 
-               Args:
-                   data_type (str): The type of data (Train, Valid, Test).
-                   source_folder_path (str): The path to the source folder containing raw data files.
-                   preprocessing_type (str): The type of preprocessing to apply.
-                   label (int): The label for the data.
-                   full_saving_path (str): The path to save the preprocessed data.
-                   merge_files (bool): Whether to merge all files into a single file.
-               """
+        data_to_process = buffer['source_paths']
+        no_folders = len(buffer['saving_paths'])
 
-        all_files = os.listdir(source_folder_path)
-        if merge_files:
-            single_matrix = None
-            for single_file_name in all_files:
-                single_file_path = os.path.join(source_folder_path, single_file_name)
+        for id_x in range(no_folders):
+            full_saving_path = buffer['saving_paths'][id_x]
+            label = buffer['labels'][id_x]
+            matrix_merge = None
+
+            for single_file_path in data_to_process[id_x]:
                 loaded_file = np.load(single_file_path)
                 preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
 
-                if single_matrix is None:
-                    single_matrix = preprocessed_data
+                if merge_files:
+                    if matrix_merge is None:
+                        matrix_merge = preprocessed_data
+                    else:
+                        matrix_merge = np.concatenate((matrix_merge, preprocessed_data), axis=0)
+
                 else:
-                    single_matrix = np.concatenate((single_matrix, preprocessed_data), axis=0)
-
-            file_path = os.path.join(full_saving_path,  f"file_{os.path.basename(os.path.normpath(source_folder_path))}_label={label}.pt")
-            single_processed_data_torch = torch.Tensor(single_matrix)
-            torch.save(single_processed_data_torch, file_path)
-
-        else:
-            for single_file_name in all_files:
-                single_file_path = os.path.join(source_folder_path, single_file_name)
-                loaded_file = np.load(single_file_path)
-                preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)
-
-                for single_processed_data in preprocessed_data:
-
-                    file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
-                    single_processed_data_torch = torch.Tensor(single_processed_data)
+                    file_path = os.path.join(full_saving_path, f"file_{self.counters[data_type]}_label={label}.pt")
+                    single_processed_data_torch = torch.Tensor(preprocessed_data)
                     torch.save(single_processed_data_torch, file_path)
-
                     self.counters[data_type] += 1
 
+            if merge_files:
+                file_path = os.path.join(full_saving_path, f"file_{self.counters[data_type]}_label={label}.pt")
+                single_processed_data_torch = torch.Tensor(matrix_merge)
+                torch.save(single_processed_data_torch, file_path)
+                self.counters[data_type] += 1
+
+
+    def get_saving_path(self,
+                        mix_bool: bool,
+                        preprocessing_type: str,
+                        additional_folder_label: str,
+                        data_type: str,
+                        measurement_folder: str):
+        if mix_bool:
+            path_data_folder = os.path.join(self.data_cache_path,
+                                            f"{preprocessing_type}{additional_folder_label}", data_type)
+        else:
+            path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}",
+                                            data_type,
+                                            measurement_folder)
+
+        return path_data_folder
+
     def preprocess_train_paths(self,
-                               all_paths,
+                               all_paths: list,
+                               get_saving_path_train: Callable,
+                               get_saving_path_valid: Callable,
                                split_train_into_train_and_valid,
                                split_ratio: float = 0.2):
-        all_paths_full = []
         train_paths = []
         valid_paths = []
 
         for single_path in all_paths:
+            saving_data_path = get_saving_path_train('')
+            self.prepare_saving_path(saving_data_path)
             file_names = os.listdir(single_path)
-            all_paths_full += self.prepare_full_paths(single_path, file_names)
+            train_paths += self.prepare_full_paths(single_path, file_names)
+            measurement_folder = Path(single_path).parts[-1]
 
-        if split_train_into_train_and_valid:
-            all_paths_full = np.asarray(all_paths_full)
-            np.random.shuffle(all_paths_full)
-            train_paths = all_paths_full[split_ratio:].tolist()
-            valid_paths = all_paths_full[:split_ratio].tolist()
-        else:
-            train_paths = all_paths_full
+            split_ratio = int(split_ratio * len(file_names))
 
-        return train_paths, valid_paths
+            if split_train_into_train_and_valid:
+                all_paths_full = np.asarray(copy(train_paths))
+                np.random.shuffle(all_paths_full)
+                train_paths = all_paths_full[split_ratio:].tolist()
+                valid_paths = all_paths_full[:split_ratio].tolist()
+
+                valid_saving_path = get_saving_path_valid(measurement_folder)
+                self.prepare_saving_path(valid_saving_path)
+
+                self.buffers_valid['source_paths'].append(valid_paths)
+                self.buffers_valid['saving_paths'].append(valid_saving_path)
+                self.buffers_valid['labels'].append(0)
+
+            self.buffers_train['source_paths'].append(train_paths)
+            self.buffers_train['saving_paths'].append(get_saving_path_train(''))
+            self.buffers_train['labels'].append(0)
+            print('')
+
+    def preprocess_test_and_valid(self,
+                                  buffer: dict,
+                                  list_path: str,
+                                  get_saving_path: Callable):
+
+        for single_path in list_path:
+            measurement_folder = Path(single_path).parts[-1]
+            label = self.get_label(measurement_folder)
+
+            saving_data_path = get_saving_path(measurement_folder)
+            self.prepare_saving_path(saving_data_path)
+
+            all_files_in_folder = os.listdir(single_path)
+            data_batch_single_path = self.prepare_full_paths(single_path, all_files_in_folder)
+
+            buffer['source_paths'].append(data_batch_single_path)
+            buffer['saving_paths'].append(get_saving_path(measurement_folder))
+            buffer['labels'].append(label)
 
 
     def preprocess_data(self,
@@ -310,6 +352,7 @@ class DataPreprocessor(PreprocessorTypes):
                         mix_test: bool = True,
                         rewrite_data: bool = False,
                         merge_files: bool = False,
+                        split_train_into_train_and_valid: bool = False,
                         additional_folder_label: str = '') -> dict:
         """
                Preprocess data for training, validation, and testing.
@@ -321,43 +364,52 @@ class DataPreprocessor(PreprocessorTypes):
                    mix_test (bool): Whether to mix test data.
                    rewrite_data (bool): Whether to rewrite existing data.
                    merge_files (bool): Whether to merge all files into a single file.
+                   split_train_into_train_and_valid (bool): Split train data into train and valid
                    additional_folder_label (str): An additional label for the folder.
 
                Returns:
                    dict: A dictionary with paths for Train, Valid, and Test data.
                """
-
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
 
+
         #iterate over different data types (Train, Valid, Test)
-        for data_type, list_path in data_paths.items():
+        get_saving_path_train = lambda measurement_folder: self.get_saving_path(mix_bool=True,
+                                                                                preprocessing_type=preprocessing_type,
+                                                                                additional_folder_label=additional_folder_label,
+                                                                                data_type='Train',
+                                                                                measurement_folder=measurement_folder)
 
-            for single_path in list_path:
-                measurement_folder = Path(single_path).parts[-1]
-                label = self.get_label(measurement_folder)
+        get_saving_path_valid = lambda measurement_folder: self.get_saving_path(mix_bool=mix_valid,
+                                                                                preprocessing_type=preprocessing_type,
+                                                                                additional_folder_label=additional_folder_label,
+                                                                                data_type='Valid',
+                                                                                measurement_folder=measurement_folder)
 
-                if (data_type == 'Valid' and mix_valid) or (data_type == 'Test' and mix_test) or (data_type=='Train'):
-                    path_data_folder = os.path.join(self.data_cache_path,
-                                               f"{preprocessing_type}{additional_folder_label}", data_type)
-                else:
-                    path_data_folder = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type,
-                                                    measurement_folder)
+        get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=mix_test,
+                                                                                preprocessing_type=preprocessing_type,
+                                                                                additional_folder_label=additional_folder_label,
+                                                                                data_type='Test',
+                                                                                measurement_folder=measurement_folder)
 
-                full_data_path = self.prepare_saving_path(path_data_folder)
+        self.preprocess_train_paths(data_paths['Train'], get_saving_path_train, get_saving_path_valid, split_train_into_train_and_valid)
+        self.preprocess_folder(data_type='Train',
+                               buffer=self.buffers_train,
+                               preprocessing_type=preprocessing_type,
+                               merge_files=merge_files)
 
-                if not full_data_path in self.paths_for_datasets[data_type]:
-                    self.paths_for_datasets[data_type].append(full_data_path)
+        self.preprocess_test_and_valid(self.buffers_valid, data_paths['Valid'], get_saving_path_valid)
+        self.preprocess_folder(data_type='Valid',
+                               buffer=self.buffers_valid,
+                               preprocessing_type=preprocessing_type,
+                               merge_files=merge_files)
 
-                if rewrite_data:
-                    self.preprocess_folder(data_type=data_type,
-                                           source_folder_path=single_path,
-                                           preprocessing_type=preprocessing_type,
-                                           label=label,
-                                           full_saving_path= full_data_path,
-                                           merge_files=merge_files)
-
-        return self.paths_for_datasets
+        self.preprocess_test_and_valid(self.buffers_test, data_paths['Test'], get_saving_path_test)
+        self.preprocess_folder(data_type='Test',
+                               buffer=self.buffers_test,
+                               preprocessing_type=preprocessing_type,
+                               merge_files=merge_files)
