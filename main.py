@@ -1,6 +1,8 @@
 # Place to work on the optimization of the model
 
 import argparse
+
+from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder
 from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
@@ -12,7 +14,7 @@ from Framework.Model_bank.autoencoder_cnn import (
 )
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.Model_bank.transformer_ae import TransformerAutoencoder
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
@@ -24,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim.lr_scheduler as lr_scheduler
 import wandb
-
+import datetime
 
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
@@ -83,6 +85,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
 
 def main(path, args):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    print(f"Using {device} device")
 
     # Dataset_paths
     all_paths = get_all_paths(path)
@@ -94,14 +97,15 @@ def main(path, args):
 
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           rewrite_data = True,
+                                                           rewrite_data = False,
                                                            merge_files = True)
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
     # model = CNNAutoencoderV2(dropout=args.dropout)
     # model = CNNAEV2(48)
-    model = TransformerAutoencoder(input_dim=72, embed_dim=64, num_heads=2, num_layers=2)
+    model = TransformerAutoencoder(input_dim=72, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = LSTMAutoencoder(input_channels=72)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -116,7 +120,7 @@ def main(path, args):
 
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}_{folder_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
-
+    wandb.log({"saving_dir": saving_folder_name})
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
 
@@ -199,9 +203,10 @@ def main(path, args):
     print('Test scores is:')
     print(test_scores)
 
-
+    # wandb.run.summary["valid_score"] = valid_scores["Validation score"]["threshold_estimator":]
+    # wandb.run.summary["test_score"] =
     for tester_label, single_scores in test_scores.items():
-        for single_scores_type_label, single_score_type_value in test_scores.items():
+        for single_scores_type_label, single_score_type_value in single_scores.items():
             wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
     wandb.finish()
 
@@ -212,19 +217,32 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs"
+        "--epochs", type=int, default=200
+        , help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size"
+        "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.0001, help="Learning rate"
     )
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
     )
     parser.add_argument(
-        "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
+        "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
+    )
+    parser.add_argument(
+        "--embed_dim", type=int, default=16, help="Embedding dimension"
+    )
+    parser.add_argument(
+        "--num_heads", type=int, default=2, help="Number of attention heads"
+    )
+    parser.add_argument(
+        "--num_layers", type=int, default=1, help="Number of Encoder/Decoder layers"
+    )
+    parser.add_argument(
+        "--dropout", type=float, default=0.7, help="Dropout"
     )
     args = parser.parse_args()
 

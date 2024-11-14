@@ -154,7 +154,7 @@ class DataPreprocessor(PreprocessorTypes):
                 else:
                     single_matrix = np.concatenate((single_matrix, preprocessed_data), axis=0)
 
-            file_path = os.path.join(full_saving_path,  f"file_{self.counters[data_type]}_label={label}.pt")
+            file_path = os.path.join(full_saving_path,  f"file_{os.path.basename(os.path.normpath(source_folder_path))}_label={label}.pt")
             single_processed_data_torch = torch.Tensor(single_matrix)
             torch.save(single_processed_data_torch, file_path)
 

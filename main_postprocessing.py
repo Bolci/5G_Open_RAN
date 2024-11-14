@@ -2,11 +2,12 @@ import os.path
 
 import matplotlib.pyplot as plt
 
+from Framework.Model_bank.transformer_ae import TransformerAutoencoder
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from Framework.utils.utils import load_json_as_dict
 from Framework.loops.loops import test_loop
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoderV2
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2, CNNAutoencoderV2
 from Framework.metrics.metrics import RMSELoss
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
@@ -17,7 +18,7 @@ import torch
 import matplotlib
 
 font = {
-        'size'   : 16}
+        'size'   : 14}
 matplotlib.rc('font', **font)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -55,7 +56,8 @@ paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
 
 # prepare datasets and data_loaders
 datasets = get_datasets(paths_for_datasets)
-model = CNNAutoencoderDropout(48).to(device)
+# model = CNNAutoencoderDropout(48).to(device)
+model = TransformerAutoencoder(input_dim=72, embed_dim=1, num_heads=1, num_layers=1).to(device)
 PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
 model.load_state_dict(torch.load(PATH))
 model.eval()

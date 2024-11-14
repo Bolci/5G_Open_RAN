@@ -13,7 +13,7 @@ class DatasetTemplate(Dataset):
              data_path: str,
              label: Optional = 0,
              loader_f: Callable = lambda x: np.load(x),
-             label_extraction_f: Callable = lambda x: int((x.split('_')[2]).split('=')[1][:-3]),
+             label_extraction_f: Callable = lambda x: int((x.split('_')[-1]).split('=')[1][:-3]),
              load_all_data: bool = False,
              device: str = "cuda",
              ):
