@@ -73,7 +73,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
         return None, None
 
     def std_diagram(self, testing_loop, boundaries = (1, 10)):
-        ranges = np.linspace(*boundaries, 20)
+        ranges = np.linspace(*boundaries, 19)
 
         scores = []
         for std_val in ranges:
@@ -92,30 +92,33 @@ class IntervalEstimatorStd(PostprocessorGeneral):
              save_figs: bool = False,
              figs_label: str = "",
              ):
-        score, predictions = testing_loop(self.metric_function_std)
+        #score, predictions = testing_loop(self.metric_function_std)
 
         ranges, scores = self.std_diagram(testing_loop)
+        max_id = np.argmax(scores)
+
+        max_sigma = ranges[max_id]
+        max_score = scores[max_id]
 
         if save_figs:
             fig, ax = plt.subplots()
-            #ax.vlines(self.measured_decision_line, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color='blue',
-            #          label='valid_threshold', linewidth=2.0)
+            ax.vlines(max_sigma, ymin=0, ymax=1, linestyles='dashed', alpha=0.5, color='blue',
+                      label='max_sigma', linewidth=2.0)
             ax.plot(ranges, scores, linewidth=2.0)
-            # ax.plot(self.measured_decision_line, score_in_threshold, 'r*', label='score from valid threshold',
-            #         linewidth=2.5)
-            #ax.grid()
-            #ax.set_ylim([0, 1])
-            #ax.set_xlim([self.threshold_values[0], self.threshold_values[-1]])
-            #ax.set_title(
-            #    f"Classification score = {score_in_threshold:.4f}, \n Threshold={self.measured_decision_line:.8f} on validation data")
-            #ax.set_xlabel('Metrics score')
-            #ax.set_ylabel('Classification score [%]')
+            ax.plot(max_sigma, max_score, 'r*')
+            ax.grid()
+            ax.set_ylim([0, 1])
+            ax.set_xlim([ranges[0], ranges[-1]])
+            ax.set_title(
+                f"Classification score = {max_score:.4f}, \n Sigma={max_sigma:.2f} on validation data")
+            ax.set_xlabel('Sigma')
+            ax.set_ylabel('Classification score [%]')
 
             if save_figs:
                 saving_path = os.path.join(self.result_folder_path, f'interval_estimator_{figs_label}.png')
                 fig.savefig(saving_path)
+            plt.close(fig)
 
-
-        return score
+        return max_score
     
     
