@@ -21,3 +21,9 @@ def load_txt(path: str):
     with open(path, 'r') as f:
         a = json.loads(f.read())
     return a
+
+def chkList(lst):
+    return len(set(lst)) == 1
+
+def flatten(xss):
+    return [x for xs in xss for x in xs]
