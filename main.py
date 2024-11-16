@@ -7,8 +7,9 @@ from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
-from Framework.loops.loops import train_loop, valid_loop, test_loop
+from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.postprocessor_utils import get_print_message
@@ -24,7 +25,6 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
-
 
     model.to(device)
     criterion.to(device)
@@ -58,7 +58,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                                         criterion,
                                                         device=device)
 
-        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
+        #wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
@@ -72,7 +72,6 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
 
 
     return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score
-
 
 
 def main(path, args):
@@ -89,12 +88,22 @@ def main(path, args):
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
                                                            rewrite_data = True,
-                                                           merge_files = True)
+                                                           merge_files = True,
+                                                           split_train_into_train_and_valid=True)
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
 
-    model = CNNAEV2(48)
+    '''
+    model = LSTMAutoencoderCustom(input_dimensions=72,
+                                  expansion_dim=args.expansion_dim,
+                                  no_layers_per_module=args.no_layers_per_module,
+                                  num_layers_per_layer = args.num_layers_per_layer,
+                                  init_channels=args.init_channels,
+                                  dropout=args.dropout,
+                                  device=device)
+    '''
+    model = CNNAutoencoder(48)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -179,7 +188,7 @@ def main(path, args):
 
     #test data loader and loop
     test_dataloader = datasets['Test'][0]
-    testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
+    testing_loop = lambda class_metric: test_loop_general(test_dataloader, model, criterion, class_metric, device=device)
 
     valid_scores = tester.estimate_decision_lines()
     print('Validation scores is:')
@@ -189,27 +198,47 @@ def main(path, args):
     print('Test scores is:')
     print(test_scores)
 
+    '''
+    wandb.log({"Test score": test_scores['Testing scores']['threshold_estimator']})
 
+    
     for tester_label, single_scores in test_scores.items():
         for single_scores_type_label, single_score_type_value in test_scores.items():
             wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
     wandb.finish()
+    '''
 
 
 if __name__ == "__main__":
     #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
-    paths_config = load_json_as_dict('./data_paths.json')
+    paths_config = load_json_as_dict('./data_path_no_valid.json')
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of epochs"
+        "--epochs", type=int, default=2, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=16, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.00001, help="Learning rate"
+        "--learning_rate", type=float, default=0.0001, help="Learning rate"
     )
+    parser.add_argument(
+        "--expansion_dim", type=int, default=2, help="Learning rate"
+    )
+    parser.add_argument(
+        "--no_layers_per_module", type=int, default=5, help="Learning rate"
+    )
+    parser.add_argument(
+        "--num_layers_per_layer", type=int, default=1, help="Learning rate"
+    )
+    parser.add_argument(
+        "--init_channels", type=int, default=12, help="Learning rate"
+    )
+    parser.add_argument(
+        "--dropout", type=float, default=0.1, help="Learning rate"
+    )
+
     parser.add_argument(
         "--log_interval", type=int, default=1, help="Log interval"
     )
@@ -219,13 +248,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # os.environ["WANDB_SILENT"] = "true"
+    '''
     wandb.init(
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
-        name="all_50_test",
+        name="all_50_complex",
         config=vars(parser.parse_args()),
         mode="online",
         # tags=[f"NewV{i}.{j}.4"],
-    )
+    )'''
 
     main(paths_config, args)
