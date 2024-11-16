@@ -2,13 +2,13 @@ import os.path
 
 import matplotlib.pyplot as plt
 
-from Framework.Model_bank.transformer_ae import TransformerAutoencoder
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from Framework.utils.utils import load_json_as_dict
-from Framework.loops.loops import test_loop
+from Framework.loops.loops import test_loop, test_loop_general
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoderV2
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2, CNNAutoencoderV2
+from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder
 from Framework.metrics.metrics import RMSELoss
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
@@ -64,9 +64,12 @@ model.eval()
 test_dataloader = datasets['Test'][0]
 criterion = RMSELoss()
 
-testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
+#testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 scores = tester.estimate_decision_lines()
-scores = tester.test_data(testing_loop=testing_loop)
+testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
+scores = tester.test_data(testing_loop=testing_loop,
+                          figs_label = "test_scores_over_threshold")
+print(scores)
 
 
 '''Testing on the additional dataset'''
@@ -78,19 +81,17 @@ data_preprocessor = DataPreprocessor()
 data_preprocessor.set_cache_path(path["Data_cache_path"])
 data_preprocessor.set_original_seg(path["True_sequence_path"])
 
-
+#plt.tight_layout()
+#plt.show()
 paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                        'abs_only_multichannel',
                                                        rewrite_data=True,
                                                        merge_files=True,
                                                        additional_folder_label='_test_meas_2')
+
 datasets = get_datasets(paths_for_datasets)
 test_dataloader = datasets['Test'][0]
-testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
+testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
+
 scores = tester.test_data(testing_loop=testing_loop,
                           figs_label = "test_scores_over_threshold_meas2")
-
-
-plt.tight_layout()
-plt.show()
-
