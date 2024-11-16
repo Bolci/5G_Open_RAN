@@ -10,12 +10,13 @@ def estimate_channels(
 ) -> np.ndarray:
     """
     Estimate the number of channels in the signal and return the signal with the estimated number of channels.
+
     Args:
-    signal (np.ndarray): Array of PSS/SSS sequences (for each carrier).
-    original_sequence (np.ndarray): Original PSS/SSS sequence.
+        signal (np.ndarray): Array of PSS/SSS sequences (for each carrier).
+        original_sequence (np.ndarray): Original PSS/SSS sequence.
 
     Returns:
-    np.ndarray: Data as a numpy array.
+        np.ndarray: Data as a numpy array.
     """
     multiply = signal.shape[1] // 4
     new_seq = np.tile(original_sequence, multiply)
@@ -32,13 +33,12 @@ def process_data(data_path: str, original_sequence_path: str) -> np.ndarray:
     Process data from the specified path and return it as a numpy array.
 
     Args:
-    data_path (str): Path to the data.
-    original_sequence_path (str): Path to the original sequence.
+        data_path (str): Path to the data.
+        original_sequence_path (str): Path to the original sequence.
 
     Returns:
-    np.ndarray: Data as a numpy array.
+        np.ndarray: Data as a numpy array.
     """
-
     original_sequence = np.load(original_sequence_path)
 
     # Compute the average of the original PSS/SSS sequence (repeats every 4 samples)

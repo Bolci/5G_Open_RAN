@@ -1,28 +1,28 @@
 import numpy as np
 
+
 class DataPreprocessorFunctions:
     """
-    A collection of static methods for preprocessing data, including functions for
-    logarithmic conversion, channel estimation, and array manipulation.
+    A class containing static methods for various data preprocessing functions.
     """
 
     @staticmethod
     def to_log(values: np.array) -> np.array:
         """
-        Converts the input values to a logarithmic scale.
+        Convert values to their logarithmic scale.
 
         Args:
             values (np.array): The input array of values.
 
         Returns:
-            np.array: The logarithmically scaled values.
+            np.array: The logarithmic scale of the input values.
         """
         return -20 * np.log10(values)
 
     @staticmethod
     def estimate_channels(signal, original_sequence):
         """
-        Estimates the channels by dividing the signal by the original sequence.
+        Estimate the channels by dividing the signal by the original sequence.
 
         Args:
             signal (np.array): The input signal array.
@@ -48,7 +48,7 @@ class DataPreprocessorFunctions:
     @staticmethod
     def complex_to_arr(array):
         """
-        Converts a complex array to an array with real and imaginary parts separated.
+        Convert a complex array to an array with real and imaginary parts separated.
 
         Args:
             array (np.array): The input complex array.
@@ -70,11 +70,11 @@ class DataPreprocessorFunctions:
     @staticmethod
     def reshape_arr(arr, no_signals_in_arr=2):
         """
-        Reshapes the input array by splitting it into multiple signals.
+        Reshape an array by splitting it into multiple signals.
 
         Args:
             arr (np.array): The input array.
-            no_signals_in_arr (int): The number of signals in the array. Defaults to 2.
+            no_signals_in_arr (int): The number of signals in the array.
 
         Returns:
             np.array: The reshaped array.
@@ -90,11 +90,11 @@ class DataPreprocessorFunctions:
     @staticmethod
     def split_by_groups_of_n(array_to_mean, len_groups: int = 4):
         """
-        Splits the input array into groups of n and reshapes it.
+        Split an array into groups of n and reshape it.
 
         Args:
             array_to_mean (np.array): The input array.
-            len_groups (int): The length of each group. Defaults to 4.
+            len_groups (int): The length of each group.
 
         Returns:
             np.array: The reshaped array.
@@ -106,13 +106,13 @@ class DataPreprocessorFunctions:
     @staticmethod
     def mean_by_quaters_axis_2(array_to_mean):
         """
-        Averages the input array by quarters along axis 2.
+        Calculate the mean of an array by quarters along the second axis.
 
         Args:
             array_to_mean (np.array): The input array.
 
         Returns:
-            np.array: The averaged array.
+            np.array: The array with the mean calculated by quarters.
         """
         new_arr = []
         for x in range(array_to_mean.shape[1] // 4):
@@ -125,13 +125,13 @@ class DataPreprocessorFunctions:
     @staticmethod
     def mean_by_quaters(array_to_mean):
         """
-        Averages the input array by quarters.
+        Calculate the mean of an array by quarters.
 
         Args:
             array_to_mean (np.array): The input array.
 
         Returns:
-            np.array: The averaged array.
+            np.array: The array with the mean calculated by quarters.
         """
         new_arr = []
         for x in range(array_to_mean.shape[1] // 4):
