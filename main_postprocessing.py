@@ -4,10 +4,11 @@ import matplotlib.pyplot as plt
 
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from Framework.utils.utils import load_json_as_dict
-from Framework.loops.loops import test_loop
+from Framework.loops.loops import test_loop, test_loop_general
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoderV2
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2, CNNAutoencoderV2
+from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder
 from Framework.metrics.metrics import RMSELoss
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
@@ -26,7 +27,7 @@ config_path = 'data_paths.json'
 config = load_json_as_dict(config_path)
 
 
-result_folder_path = 'Try_Preprocessing=abs_only_multichannel_no-epochs=200_lr=1e-05_bs=32_model=CNN_AE'
+result_folder_path = 'Try_Preprocessing=abs_only_multichannel_no-epochs=30_lr=0.0001_bs=16_model=CNN_AE'
 train_over_epoch = 'train_over_epoch.txt'
 valid_over_epoch = 'valid_over_epoch.txt'
 valid_score_over_epoch_per_batch_file_name = 'valid_epochs_labels.txt'
@@ -55,16 +56,20 @@ paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
 
 # prepare datasets and data_loaders
 datasets = get_datasets(paths_for_datasets)
-model = CNNAutoencoderDropout(48).to(device)
+#model = CNNAutoencoderDropout(48).to(device)
+model = CNNAutoencoder(48).to(device)
 PATH = os.path.join(config['Saving_path'], result_folder_path, 'model.pt')
 model.load_state_dict(torch.load(PATH))
 model.eval()
 test_dataloader = datasets['Test'][0]
 criterion = RMSELoss()
 
-testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
+#testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 scores = tester.estimate_decision_lines()
-scores = tester.test_data(testing_loop=testing_loop)
+testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
+scores = tester.test_data(testing_loop=testing_loop,
+                          figs_label = "test_scores_over_threshold")
+print(scores)
 
 
 '''Testing on the additional dataset'''
@@ -76,19 +81,17 @@ data_preprocessor = DataPreprocessor()
 data_preprocessor.set_cache_path(path["Data_cache_path"])
 data_preprocessor.set_original_seg(path["True_sequence_path"])
 
-
+#plt.tight_layout()
+#plt.show()
 paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                        'abs_only_multichannel',
                                                        rewrite_data=True,
                                                        merge_files=True,
                                                        additional_folder_label='_test_meas_2')
+
 datasets = get_datasets(paths_for_datasets)
 test_dataloader = datasets['Test'][0]
-testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
+testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
+
 scores = tester.test_data(testing_loop=testing_loop,
                           figs_label = "test_scores_over_threshold_meas2")
-
-
-plt.tight_layout()
-plt.show()
-

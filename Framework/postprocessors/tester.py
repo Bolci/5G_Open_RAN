@@ -1,15 +1,31 @@
 from Framework.postprocessors.threshold_estimator import ThresholdEstimator
 from Framework.postprocessors.PDF_comparator import PDFComparator
+from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax
 
-import matplotlib.pyplot as plt
-from typing import Callable
-import numpy as np
-import os
+from typing import Callable, List
 from copy import copy
+
+
+class TesterFactory:
+    test_options = \
+        {
+            'threshold_estimator': lambda: ThresholdEstimator(),
+            'pdf_comparator': lambda: PDFComparator(),
+            'interval_estimator_min_max': lambda: IntervalEstimatorMinMax(),
+            'interval_estimator_std': lambda: IntervalEstimatorStd()
+        }
+
+    @staticmethod
+    def get_test(test_type):
+        if test_type not in TesterFactory.test_options:
+            raise ValueError(f"Unknown test type: {test_type}")
+
+        return TesterFactory.test_options[test_type]
+
 
 class Tester:
     """
-    A class to handle testing and estimation of decision lines using different postprocessors.
+        A class to handle testing and estimation of decision lines using different postprocessors.
     """
 
     def __init__(self,
@@ -18,17 +34,9 @@ class Tester:
                  train_score_over_epoch_file_name: str,
                  valid_score_over_epoch_file_name: str,
                  valid_score_over_epoch_per_batch_file_name: str,
-                 train_score_final_file_name: str):
-        """
-        Initializes the Tester with paths and filenames for score files.
+                 train_score_final_file_name: str,
+                 tests_to_perform: List[str] = ('interval_estimator_min_max', 'interval_estimator_std')):
 
-        :param result_folder_path: Path to the result folder.
-        :param attempt_name: Name of the attempt.
-        :param train_score_over_epoch_file_name: File name for training scores over epochs.
-        :param valid_score_over_epoch_file_name: File name for validation scores over epochs.
-        :param valid_score_over_epoch_per_batch_file_name: File name for validation scores per batch.
-        :param train_score_final_file_name: File name for final training scores.
-        """
         self.result_folder_path = result_folder_path
         self.attempt_name = attempt_name
         self.train_score_over_epoch_file_name = train_score_over_epoch_file_name
@@ -36,41 +44,29 @@ class Tester:
         self.valid_score_over_epoch_per_batch_file_name = valid_score_over_epoch_per_batch_file_name
         self.train_score_final_file_name = train_score_final_file_name
 
-        threshold_estimator = ThresholdEstimator()
-        threshold_estimator.set_paths(result_folder_path=result_folder_path,
-                                      attempt_name=attempt_name,
-                                      train_score_over_epoch_file_name=train_score_over_epoch_file_name,
-                                      valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
-                                      valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
-                                      train_score_final_file_name=train_score_final_file_name)
+        self.tester_buffer = {}
+        self.prepare_tests(tests_to_perform)
 
-        pdf_comparator = PDFComparator()
-        pdf_comparator.set_paths(result_folder_path=result_folder_path,
-                                 attempt_name=attempt_name,
-                                 train_score_over_epoch_file_name=train_score_over_epoch_file_name,
-                                 valid_score_over_epoch_file_name=valid_score_over_epoch_file_name,
-                                 valid_score_over_epoch_per_batch_file_name=valid_score_over_epoch_per_batch_file_name,
-                                 train_score_final_file_name=train_score_final_file_name)
+        print(self.tester_buffer)
 
-        self.tester_buffer = {'threshold_estimator': threshold_estimator,
-                              'pdf_comparator': pdf_comparator}
+    def prepare_tests(self, test_types: list) -> None:
+        for test_type in test_types:
+            self.tester_buffer[test_type] = TesterFactory.get_test(test_type)()
+            self.tester_buffer[test_type].set_paths(result_folder_path=self.result_folder_path,
+                                                    attempt_name=self.attempt_name,
+                                                    train_score_over_epoch_file_name=self.train_score_over_epoch_file_name,
+                                                    valid_score_over_epoch_file_name=self.valid_score_over_epoch_file_name,
+                                                    valid_score_over_epoch_per_batch_file_name=self.valid_score_over_epoch_per_batch_file_name,
+                                                    train_score_final_file_name=self.train_score_final_file_name)
 
     def estimate_decision_lines(self,
                                 use_epochs: int = 1,
                                 no_steps_to_estimate: int = 200,
                                 prepare_figs: bool = True,
                                 save_figs: bool = True,
-                                figs_label: str = "valid_scores_over_threshold"):
-        """
-        Estimates decision lines using the postprocessors in the tester buffer.
+                                figs_label: str = "valid_scores_over_threshold"
+                                ) -> dict:
 
-        :param use_epochs: Number of epochs to use for estimation.
-        :param no_steps_to_estimate: Number of steps to estimate.
-        :param prepare_figs: Whether to prepare figures.
-        :param save_figs: Whether to save figures.
-        :param figs_label: Label for the figures.
-        :return: A dictionary containing validation scores.
-        """
         valid_scores = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
             threshold, classification_score = single_tester.estimate_decision_lines(use_epochs=use_epochs,
@@ -88,18 +84,8 @@ class Tester:
                   no_steps_to_estimate: int = 200,
                   prepare_figs: bool = True,
                   save_figs: bool = True,
-                  figs_label: str = "test_scores_over_threshold"):
-        """
-        Tests the data using the postprocessors in the tester buffer.
+                  figs_label: str = "test_scores_over_threshold") -> dict:
 
-        :param testing_loop: A callable representing the testing loop.
-        :param use_epochs: Number of epochs to use for testing.
-        :param no_steps_to_estimate: Number of steps to estimate.
-        :param prepare_figs: Whether to prepare figures.
-        :param save_figs: Whether to save figures.
-        :param figs_label: Label for the figures.
-        :return: A dictionary containing testing scores.
-        """
         testing_scores = {}
 
         for single_tester_name, single_tester in self.tester_buffer.items():
