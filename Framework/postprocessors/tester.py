@@ -66,7 +66,10 @@ class Tester:
                                 save_figs: bool = True,
                                 figs_label: str = "valid_scores_over_threshold"
                                 ) -> dict:
+<<<<<<< HEAD
 
+=======
+>>>>>>> ee8dc98 (updates)
         valid_scores = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
             threshold, classification_score = single_tester.estimate_decision_lines(use_epochs=use_epochs,
@@ -85,7 +88,11 @@ class Tester:
                   prepare_figs: bool = True,
                   save_figs: bool = True,
                   figs_label: str = "test_scores_over_threshold") -> dict:
+<<<<<<< HEAD
 
+=======
+        
+>>>>>>> ee8dc98 (updates)
         testing_scores = {}
 
         for single_tester_name, single_tester in self.tester_buffer.items():
