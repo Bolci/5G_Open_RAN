@@ -3,10 +3,11 @@ import torch
 from .data_preprocessor_functions import DataPreprocessorFunctions
 import os
 from ..exceptions.exceptions import DataProcessorException
-from ..utils.utils import load_mat_file, chkList, flatten
+from ..utils.utils import load_mat_file
 from pathlib import Path
 from typing import Callable
 from copy import copy
+from typing import List
 import shutil
 
 
@@ -159,10 +160,29 @@ class PreprocessorTypes:
 
 
 class DataPreprocessor(PreprocessorTypes):
+    """
+        A class for preprocessing datasets with various strategies.
+
+        The `DataPreprocessor` class inherits from `PreprocessorTypes` and provides functionality
+        for managing preprocessing tasks for training, validation, and testing datasets. It maintains
+        buffers, counters, and paths for organizing preprocessed data.
+
+        Attributes:
+            data_cache_path (str): Path to the cache directory where preprocessed data will be saved.
+            original_seq (list): Original trasmitted sequence of PSS and SSS used during preprocessing.
+            possible_preprocessing (dict): Mapping of preprocessing strategy names to their corresponding functions.
+                                           Each function operates on two inputs: the original sequence and loaded file.
+            counters (dict): Tracks the number of processed files for each dataset type ('Train', 'Valid', 'Test').
+            paths_for_datasets (dict): Stores paths for processed data for 'Train', 'Test', and 'Valid'.
+            buffers_train (dict): Contains 'source_paths', 'saving_paths', and 'labels' for training data.
+            buffers_valid (dict): Contains 'source_paths', 'saving_paths', and 'labels' for validation data.
+            buffers_test (dict): Contains 'source_paths', 'saving_paths', and 'labels' for test data.
+    """
+
     def __init__(self):
         super().__init__()
         self.data_cache_path = None
-        self.original_seq = []
+        self.original_seq = None
         self.possible_preprocessing = {'abs_only': lambda x, y: PreprocessorTypes.abs_only(x, y),
                                        'abs_only_mean_by_group': lambda x, y: PreprocessorTypes.abs_only_mean_by_group(x, y),
                                        'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
@@ -219,6 +239,18 @@ class DataPreprocessor(PreprocessorTypes):
 
     @staticmethod
     def delete_folder_if_exists(saving_folder_name: str) -> None:
+        """
+        Deletes a folder if it exists.
+
+        This function checks if a folder with the specified name exists. If it does,
+        the folder and all its contents are removed.
+
+        Args:
+            saving_folder_name (str): The name or path of the folder to delete.
+
+        Returns:
+            None: This function does not return a value.
+        """
 
         if os.path.exists(saving_folder_name):
             shutil.rmtree(saving_folder_name)
@@ -241,7 +273,18 @@ class DataPreprocessor(PreprocessorTypes):
         return label
 
     @staticmethod
-    def prepare_full_paths(path, files):
+    def prepare_full_paths(path, files) -> List[str]:
+        """
+        Generate full file paths by combining a directory path with a list of file names.
+
+        Args:
+            path (str): The directory path to which the file names will be appended.
+            files (list of str): A list of file names to be combined with the directory path.
+
+        Returns:
+            List[str] : A list of full file paths, where each file name in `files` is joined with `path`.
+
+        """
         return [os.path.join(path, x) for x in files]
 
 
@@ -250,6 +293,22 @@ class DataPreprocessor(PreprocessorTypes):
                           buffer,
                           preprocessing_type,
                           merge_files):
+        """
+            Preprocess data files in a given folder and save the results.
+
+            Args:
+                data_type (str): The type of data being processed (e.g., 'train', 'test').
+                buffer (dict): Contains 'source_paths', 'saving_paths', and 'labels'.
+                               - 'source_paths': List of file paths to process.
+                               - 'saving_paths': List of directories to save processed files.
+                               - 'labels': List of labels corresponding to the data.
+                preprocessing_type (str): Key to identify the preprocessing function to use.
+                merge_files (bool): If True, concatenates preprocessed data into a single file for each folder.
+                                    If False, saves preprocessed data as separate files.
+
+            Returns:
+                None
+        """
 
         data_to_process = buffer['source_paths']
         no_folders = len(buffer['saving_paths'])
@@ -287,7 +346,21 @@ class DataPreprocessor(PreprocessorTypes):
                         preprocessing_type: str,
                         additional_folder_label: str,
                         data_type: str,
-                        measurement_folder: str):
+                        measurement_folder: str) -> str:
+        """
+            Construct the saving path for preprocessed data.
+
+            Args:
+                mix_bool (bool): If True, paths are mixed; otherwise, they are organized hierarchically.
+                preprocessing_type (str): The preprocessing type (e.g., 'normalize').
+                additional_folder_label (str): Additional label to append to the folder name.
+                data_type (str): The type of data ('train', 'test', 'valid').
+                measurement_folder (str): The specific measurement folder name.
+
+            Returns:
+                str: The full saving path for the preprocessed data.
+        """
+
         if mix_bool:
             path_data_folder = os.path.join(self.data_cache_path,
                                             f"{preprocessing_type}{additional_folder_label}", data_type)
@@ -303,7 +376,22 @@ class DataPreprocessor(PreprocessorTypes):
                                get_saving_path_train: Callable,
                                get_saving_path_valid: Callable,
                                split_train_into_train_and_valid,
-                               split_ratio: float = 0.2):
+                               split_ratio: float = 0.2) -> None:
+
+        """
+            Prepares training and validation paths by splitting data and saving the paths into buffers.
+
+            Args:
+                all_paths (List[str]): List of folder paths containing raw training data.
+                get_saving_path_train (Callable[[str], str]): Function to get training data saving path.
+                get_saving_path_valid (Callable[[str], str]): Function to get validation data saving path.
+                split_train_into_train_and_valid (bool): Whether to split training data into train and validation.
+                split_ratio (float): Ratio for splitting training data into validation (default is 0.2).
+
+            Returns:
+                None
+        """
+
         train_paths = []
         valid_paths = []
 
@@ -332,12 +420,24 @@ class DataPreprocessor(PreprocessorTypes):
             self.buffers_train['source_paths'].append(train_paths)
             self.buffers_train['saving_paths'].append(get_saving_path_train(''))
             self.buffers_train['labels'].append(0)
-            print('')
+
 
     def preprocess_test_and_valid(self,
                                   buffer: dict,
                                   list_path: str,
-                                  get_saving_path: Callable):
+                                  get_saving_path: Callable) -> None:
+
+        """
+            Prepares test and validation buffers by scanning paths and saving necessary information.
+
+            Args:
+                buffer (dict): Contains 'source_paths', 'saving_paths', and 'labels' for test or validation data.
+                list_path (List[str]): List of folder paths containing raw test/validation data.
+                get_saving_path (Callable[[str], str]): Function to get saving path for each folder.
+
+            Returns:
+                None
+        """
 
         for single_path in list_path:
             measurement_folder = Path(single_path).parts[-1]
@@ -355,8 +455,19 @@ class DataPreprocessor(PreprocessorTypes):
 
 
     def scan_saving_paths(self,
-                          preprocessing_type,
-                          additional_folder_label):
+                          preprocessing_type: str,
+                          additional_folder_label: str) -> None:
+
+        """
+            Scans directories for existing preprocessed data paths and saves them into class atribute.
+
+            Args:
+                preprocessing_type (str): Type of preprocessing (e.g., 'normalize').
+                additional_folder_label (str): Label to append to the folder name.
+
+            Returns:
+                None
+        """
 
         for data_type, _ in self.paths_for_datasets.items():
             dir_path = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type)
@@ -387,25 +498,25 @@ class DataPreprocessor(PreprocessorTypes):
                         split_train_into_train_and_valid: bool = False,
                         additional_folder_label: str = '') -> dict:
         """
-               Preprocess data for training, validation, and testing.
+           Preprocess data for training, validation, and testing.
 
-               Args:
-                   data_paths (dict): A dictionary containing paths for Train, Valid, and Test data.
-                   preprocessing_type (str): The type of preprocessing to apply.
-                   mix_valid (bool): Whether to mix validation data.
-                   mix_test (bool): Whether to mix test data.
-                   rewrite_data (bool): Whether to rewrite existing data.
-                   merge_files (bool): Whether to merge all files into a single file.
-                   split_train_into_train_and_valid (bool): Split train data into train and valid
-                   additional_folder_label (str): An additional label for the folder.
+           Args:
+               data_paths (dict): A dictionary containing paths for Train, Valid, and Test data.
+               preprocessing_type (str): The type of preprocessing to apply.
+               mix_valid (bool): Whether to mix validation data.
+               mix_test (bool): Whether to mix test data.
+               rewrite_data (bool): Whether to rewrite existing data.
+               merge_files (bool): Whether to merge all files into a single file.
+               split_train_into_train_and_valid (bool): Split train data into train and valid
+               additional_folder_label (str): An additional label for the folder.
 
-               Returns:
-                   dict: A dictionary with paths for Train, Valid, and Test data.
-               """
-        if self.data_cache_path == None:
+           Returns:
+               dict: A dictionary with paths for Train, Valid, and Test data.
+        """
+        if self.data_cache_path is None:
             raise DataProcessorException("Data cache path is not set")
 
-        if len(self.original_seq) == 0:
+        if self.original_seq is None:
             raise DataProcessorException("Original sequence is not set")
 
         if rewrite_data:

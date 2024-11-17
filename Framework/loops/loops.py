@@ -62,7 +62,6 @@ def test_loop(dataloader_test,
 
     no_samples = len(dataloader_test)
     counter_var_0 = 0
-    #counter_var_1 = 0
 
     with torch.no_grad():
         for X, y in dataloader_test:
@@ -78,9 +77,7 @@ def test_loop(dataloader_test,
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
     classification_score_0 = float(counter_var_0)/float(no_samples)
-    #classification_score_1 = float(counter_var_1) / float(no_samples)
 
-    #return classification_score_0, classification_score_1, predicted_results
     return classification_score_0, predicted_results
 
 
