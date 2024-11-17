@@ -27,6 +27,7 @@ class Tester:
     """
         A class to handle testing and estimation of decision lines using different postprocessors.
     """
+
     def __init__(self,
                  result_folder_path: str,
                  attempt_name: str,
@@ -57,7 +58,6 @@ class Tester:
                                                     valid_score_over_epoch_file_name=self.valid_score_over_epoch_file_name,
                                                     valid_score_over_epoch_per_batch_file_name=self.valid_score_over_epoch_per_batch_file_name,
                                                     train_score_final_file_name=self.train_score_final_file_name)
-
 
     def estimate_decision_lines(self,
                                 use_epochs: int = 1,
