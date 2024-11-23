@@ -61,12 +61,16 @@ def get_all_paths(path: dict,
                                                                )
         datasets |= train_folders_path
 
+
     if 'Valid_folders' in path.keys():
         valid_folders_path = prepare_single_path_per_data_type(folders_names=path['Valid_folders'],
                                                                general_path=path['Data_path'],
                                                                data_type='Valid',
                                                                )
         datasets |= valid_folders_path
+
+    else:
+        datasets |= {'Valid': []}
 
 
 

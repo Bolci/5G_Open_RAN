@@ -185,17 +185,18 @@ def main(path, args):
                     valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
                     train_score_final_file_name=train_final_score_per_batch)
 
-    #test data loader and loop
-    test_dataloader = datasets['Test'][0]
-    testing_loop = lambda class_metric: test_loop_general(test_dataloader, model, criterion, class_metric, device=device)
-
+    #valid loop
     valid_scores = tester.estimate_decision_lines()
     print('Validation scores is:')
     print(valid_scores)
 
-    test_scores = tester.test_data(testing_loop=testing_loop)
-    print('Test scores is:')
-    print(test_scores)
+    #test data loader and loop
+
+    for id_dat, single_test_dataset in enumerate(datasets['Test']):
+        testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
+        test_scores = tester.test_data(testing_loop=testing_loop)
+        print(f'Test scores, dataset_id {id_dat} is:')
+        print(test_scores)
 
     '''
     wandb.log({"Test score": test_scores['Testing scores']['threshold_estimator']})

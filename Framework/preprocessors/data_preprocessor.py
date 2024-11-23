@@ -160,6 +160,9 @@ class PreprocessorTypes:
 
 class DataPreprocessor(PreprocessorTypes):
     def __init__(self):
+        """
+        Initialize the DataPreprocessor with default values.
+        """
         super().__init__()
         self.data_cache_path = None
         self.original_seq = []
@@ -212,7 +215,6 @@ class DataPreprocessor(PreprocessorTypes):
         Returns:
             str: The full path to the saving folder.
         """
-        # full_path = os.path.join(self.data_cache_path, saving_folder_name)
         full_path = saving_folder_name
         if not os.path.exists(full_path):
             os.makedirs(full_path)
@@ -254,6 +256,9 @@ class DataPreprocessor(PreprocessorTypes):
 
         data_to_process = buffer['source_paths']
         no_folders = len(buffer['saving_paths'])
+
+        if not data_type in self.counters.keys():
+            self.counters[data_type] = 0
 
         for id_x in range(no_folders):
             full_saving_path = buffer['saving_paths'][id_x]
@@ -333,7 +338,6 @@ class DataPreprocessor(PreprocessorTypes):
             self.buffers_train['source_paths'].append(train_paths)
             self.buffers_train['saving_paths'].append(get_saving_path_train(''))
             self.buffers_train['labels'].append(0)
-            print('')
 
     def preprocess_test_and_valid(self,
                                   buffer: dict,
@@ -354,28 +358,33 @@ class DataPreprocessor(PreprocessorTypes):
             buffer['saving_paths'].append(get_saving_path(measurement_folder))
             buffer['labels'].append(label)
 
-
     def scan_saving_paths(self,
                           preprocessing_type,
                           additional_folder_label):
+        dir_path = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}")
+        all_type_folders = os.listdir(dir_path)
 
-        for data_type, _ in self.paths_for_datasets.items():
-            dir_path = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}", data_type)
-            if not os.path.exists(dir_path):
+        for single_data_type in all_type_folders:
+
+            dir_path_full = os.path.join(dir_path, single_data_type)
+            if not os.path.exists(dir_path_full):
                 continue
 
-            all_files_in_dir = os.listdir(dir_path)
+            all_files_in_dir = os.listdir(dir_path_full)
 
             sub_buffer = []
             for single_file in all_files_in_dir:
-                full_path = os.path.join(dir_path, single_file)
+                full_path = os.path.join(dir_path_full, single_file)
 
                 if os.path.isdir(full_path):
                     sub_buffer.append(full_path)
                 else:
-                    sub_buffer.append(dir_path)
+                    sub_buffer.append(dir_path_full)
                     break
-            self.paths_for_datasets[data_type] = sub_buffer
+
+            dt = single_data_type.split('_')
+            data_type = dt[0] if not len(dt) == 1 else single_data_type
+            self.paths_for_datasets[data_type] += sub_buffer
 
 
     def preprocess_data(self,
@@ -383,7 +392,6 @@ class DataPreprocessor(PreprocessorTypes):
                         preprocessing_type: str,
                         mix_valid: bool = True,
                         mix_test: bool = True,
-                        keep_test_scenarios = True,
                         rewrite_data: bool = False,
                         merge_files: bool = False,
                         split_train_into_train_and_valid: bool = False,
@@ -404,12 +412,12 @@ class DataPreprocessor(PreprocessorTypes):
                Returns:
                    dict: A dictionary with paths for Train, Valid, and Test data.
                """
-        print(data_paths)
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
 
         if len(self.original_seq) == 0:
             raise DataProcessorException("Original sequence is not set")
+
 
         if rewrite_data:
             path_old = os.path.join(self.data_cache_path, f"{preprocessing_type}{additional_folder_label}")
@@ -428,13 +436,6 @@ class DataPreprocessor(PreprocessorTypes):
                                                                                     data_type='Valid',
                                                                                     measurement_folder=measurement_folder)
 
-            get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=mix_test,
-                                                                                   preprocessing_type=preprocessing_type,
-                                                                                   additional_folder_label=additional_folder_label,
-                                                                                   data_type='Test',
-                                                                                   measurement_folder=measurement_folder)
-
-
             self.preprocess_train_paths(data_paths['Train'], get_saving_path_train, get_saving_path_valid, split_train_into_train_and_valid)
             self.preprocess_folder(data_type='Train',
                                    buffer=self.buffers_train,
@@ -442,7 +443,6 @@ class DataPreprocessor(PreprocessorTypes):
                                    merge_files=merge_files)
             del self.buffers_train
 
-            
             self.preprocess_test_and_valid(self.buffers_valid, data_paths['Valid'], get_saving_path_valid)
             self.preprocess_folder(data_type='Valid',
                                    buffer=self.buffers_valid,
@@ -450,11 +450,22 @@ class DataPreprocessor(PreprocessorTypes):
                                    merge_files=merge_files)
             del self.buffers_valid
 
-            self.preprocess_test_and_valid(self.buffers_test, data_paths['Test'], get_saving_path_test)
-            self.preprocess_folder(data_type='Test',
-                                   buffer=self.buffers_test,
-                                   preprocessing_type=preprocessing_type,
-                                   merge_files=merge_files)
+            filtered_keys = [x for x in data_paths.keys() if 'Test' in x]
+
+            for testing_folder in filtered_keys:
+                get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=mix_test,
+                                                                                       preprocessing_type=preprocessing_type,
+                                                                                       additional_folder_label=additional_folder_label,
+                                                                                       data_type=testing_folder,
+                                                                                       measurement_folder=measurement_folder)
+
+                self.preprocess_test_and_valid(self.buffers_test, data_paths[testing_folder], get_saving_path_test)
+                self.preprocess_folder(data_type=testing_folder,
+                                       buffer=self.buffers_test,
+                                       preprocessing_type=preprocessing_type,
+                                       merge_files=merge_files)
+                self.buffers_test = {'source_paths': [], 'saving_paths' : [], 'labels':[]}
+
             del self.buffers_test
 
         self.scan_saving_paths(preprocessing_type, additional_folder_label)
