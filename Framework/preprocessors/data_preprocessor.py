@@ -383,6 +383,7 @@ class DataPreprocessor(PreprocessorTypes):
                         preprocessing_type: str,
                         mix_valid: bool = True,
                         mix_test: bool = True,
+                        keep_test_scenarios = True,
                         rewrite_data: bool = False,
                         merge_files: bool = False,
                         split_train_into_train_and_valid: bool = False,
@@ -403,6 +404,7 @@ class DataPreprocessor(PreprocessorTypes):
                Returns:
                    dict: A dictionary with paths for Train, Valid, and Test data.
                """
+        print(data_paths)
         if self.data_cache_path == None:
             raise DataProcessorException("Data cache path is not set")
 
@@ -427,10 +429,10 @@ class DataPreprocessor(PreprocessorTypes):
                                                                                     measurement_folder=measurement_folder)
 
             get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=mix_test,
-                                                                                    preprocessing_type=preprocessing_type,
-                                                                                    additional_folder_label=additional_folder_label,
-                                                                                    data_type='Test',
-                                                                                    measurement_folder=measurement_folder)
+                                                                                   preprocessing_type=preprocessing_type,
+                                                                                   additional_folder_label=additional_folder_label,
+                                                                                   data_type='Test',
+                                                                                   measurement_folder=measurement_folder)
 
 
             self.preprocess_train_paths(data_paths['Train'], get_saving_path_train, get_saving_path_valid, split_train_into_train_and_valid)
@@ -440,6 +442,7 @@ class DataPreprocessor(PreprocessorTypes):
                                    merge_files=merge_files)
             del self.buffers_train
 
+            
             self.preprocess_test_and_valid(self.buffers_valid, data_paths['Valid'], get_saving_path_valid)
             self.preprocess_folder(data_type='Valid',
                                    buffer=self.buffers_valid,

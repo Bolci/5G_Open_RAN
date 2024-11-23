@@ -47,7 +47,6 @@ class Tester:
         self.tester_buffer = {}
         self.prepare_tests(tests_to_perform)
 
-        print(self.tester_buffer)
 
     def prepare_tests(self, test_types: list) -> None:
         for test_type in test_types:

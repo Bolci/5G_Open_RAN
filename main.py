@@ -89,6 +89,7 @@ def main(path, args):
                                                            args.preprocesing_type,
                                                            rewrite_data = True,
                                                            merge_files = True,
+                                                           mix_test = True,
                                                            split_train_into_train_and_valid=True)
 
     #prepare datasets and data_loaders
@@ -110,7 +111,6 @@ def main(path, args):
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
 
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
-
 
     #preparing saving paths
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
@@ -176,7 +176,6 @@ def main(path, args):
     #valid_graph
     sv_path = os.path.join(saving_path, 'valid_graph.png')
     plot_data_by_labels(valid_loss_all_save, sv_path)
-
 
     #testing loop
     tester = Tester(result_folder_path=path['Saving_path'],

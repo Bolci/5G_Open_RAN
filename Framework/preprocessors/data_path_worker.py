@@ -25,37 +25,56 @@ def get_all_paths(path: dict) -> dict:
         dict: A dictionary with keys 'Train', 'Valid', and 'Test', each containing a list of full paths to the respective dataset folders.
     """
 
-def prepare_single_path_per_data_type(data_type, path):
-    general_path = path['Data_path']
-    folder_paths_final = []
+def prepare_single_path_per_data_type(folders_names, general_path, data_type, keep_folders = False):
 
-    folders = path[data_type]
-    if not isinstance(folders, list):
-        folders = [folders]
+    folder_paths_final = {}
 
-    for single_folder_path in folders:
+    if not isinstance(folders_names, list):
+        folders_names = [folders_names]
+
+    folder_paths_mixed = []
+
+    for single_folder_path in folders_names:
         single_folder_path_full = os.path.join(general_path, single_folder_path)
         test_folders_path = create_paths_for_data_type(single_folder_path_full)
 
-        folder_paths_final += test_folders_path
+        if keep_folders:
+            folder_paths_final[f'{data_type}_{single_folder_path}'] = test_folders_path
+        else:
+            folder_paths_mixed += test_folders_path
+
+    if not keep_folders:
+        folder_paths_final[data_type] = folder_paths_mixed
 
     return folder_paths_final
 
 
-def get_all_paths(path: dict) -> dict:
-    train_folders_path = []
-    valid_folders_path = []
-    test_folders_paths = []
+def get_all_paths(path: dict,
+                  keep_test_scenarios: bool = True) -> dict:
+
+    datasets = {}
 
     if 'Train_folders' in path.keys():
-        train_folders_path = prepare_single_path_per_data_type('Train_folders', path)
+        train_folders_path = prepare_single_path_per_data_type(folders_names = path['Train_folders'],
+                                                               general_path = path['Data_path'],
+                                                               data_type = 'Train',
+                                                               )
+        datasets |= train_folders_path
 
     if 'Valid_folders' in path.keys():
-        valid_folders_path = prepare_single_path_per_data_type('Valid_folders', path)
+        valid_folders_path = prepare_single_path_per_data_type(folders_names=path['Valid_folders'],
+                                                               general_path=path['Data_path'],
+                                                               data_type='Valid',
+                                                               )
+        datasets |= valid_folders_path
+
+
 
     if 'Test_folders' in path.keys():
-        test_folders_paths = prepare_single_path_per_data_type('Test_folders', path)
-
-    datasets = {'Train': train_folders_path, 'Valid': valid_folders_path, 'Test': test_folders_paths}
+        test_folders_paths = prepare_single_path_per_data_type(folders_names=path['Test_folders'],
+                                                               general_path=path['Data_path'],
+                                                               data_type='Test',
+                                                               keep_folders = keep_test_scenarios)
+        datasets |= test_folders_paths
 
     return datasets
