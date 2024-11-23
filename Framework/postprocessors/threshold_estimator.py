@@ -260,7 +260,7 @@ class ThresholdEstimator(PostprocessorGeneral):
                 saving_label=figs_label,
                 save_fig=save_figs)
 
-        return classification_score_on_test
+        return classification_score_on_test, ''
 
     def get_fig(self,
                 results_scores,

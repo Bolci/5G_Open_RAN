@@ -2,7 +2,7 @@ import numpy as np
 import os
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 import matplotlib.pyplot as plt
-from typing import Tuple, Callable
+from typing import Tuple, Callable, Any
 
 
 class IntervalEstimatorMinMax(PostprocessorGeneral):
@@ -81,7 +81,7 @@ class IntervalEstimatorMinMax(PostprocessorGeneral):
              prepare_figs: bool = False,
              save_figs: bool = False,
              figs_label: str = "",
-             ) -> float:
+             ):
         """
         Tests the model and calculates the classification score based on the decision boundaries.
 
@@ -94,11 +94,10 @@ class IntervalEstimatorMinMax(PostprocessorGeneral):
             figs_label (str): not used, is there just to have consistent code with other estimators.
 
         Returns:
-            float: The classification score.
         """
         score, predictions = testing_loop(self.metric_function_interval)
 
-        return score
+        return score, predictions
 
 
 class IntervalEstimatorStd(PostprocessorGeneral):
@@ -167,7 +166,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
 
     def std_diagram(self,
                     testing_loop: Callable,
-                    boundaries: Tuple[int, int] = (1, 10)) -> Tuple[np.array, list]:
+                    boundaries: Tuple[int, int] = (1, 10)) -> Tuple[np.array, list, list]:
         """
         Creates a diagram of classification scores over different standard deviation thresholds.
 
@@ -182,12 +181,13 @@ class IntervalEstimatorStd(PostprocessorGeneral):
         ranges = np.linspace(*boundaries, 19)
 
         scores = []
+        predictions = []
         for std_val in ranges:
             self.std_val_threshold = std_val
             score, predictions = testing_loop(self.metric_function_std)
             scores.append(score)
 
-        return ranges, scores
+        return ranges, scores, predictions
 
 
     def test(self,
@@ -197,7 +197,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
              prepare_figs: bool = False,
              save_figs: bool = False,
              figs_label: str = "",
-             ) -> float:
+             ):
         """
            Tests the model and calculates the classification score based on the decision boundaries.
 
@@ -210,10 +210,10 @@ class IntervalEstimatorStd(PostprocessorGeneral):
                figs_label (str): Label for saving the figures.
 
            Returns:
-               float: The classification score.
+
         """
 
-        ranges, scores = self.std_diagram(testing_loop)
+        ranges, scores, predictions = self.std_diagram(testing_loop)
         max_id = np.argmax(scores)
 
         max_sigma = ranges[max_id]
@@ -239,6 +239,6 @@ class IntervalEstimatorStd(PostprocessorGeneral):
                 fig.savefig(saving_path)
             plt.close(fig)
 
-        return max_score
+        return max_score, predictions
     
     

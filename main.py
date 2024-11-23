@@ -194,16 +194,12 @@ def main(path, args):
 
     for id_dat, single_test_dataset in enumerate(datasets['Test']):
         testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
-        test_scores = tester.test_data(testing_loop=testing_loop)
+        test_scores, predictions = tester.test_data(testing_loop=testing_loop)
         print("=============================")
         print(f'Test scores, dataset_id {id_dat}')
         print(f"Dataset path is: {paths_for_datasets['Test'][id_dat]}")
-        print(test_scores)
 
     '''
-    wandb.log({"Test score": test_scores['Testing scores']['threshold_estimator']})
-
-    
     for tester_label, single_scores in test_scores.items():
         for single_scores_type_label, single_score_type_value in test_scores.items():
             wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})

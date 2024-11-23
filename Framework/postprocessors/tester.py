@@ -83,17 +83,19 @@ class Tester:
                   no_steps_to_estimate: int = 200,
                   prepare_figs: bool = True,
                   save_figs: bool = True,
-                  figs_label: str = "test_scores_over_threshold") -> dict:
+                  figs_label: str = "test_scores_over_threshold"):
 
         testing_scores = {}
+        predictions_buffer = {}
 
         for single_tester_name, single_tester in self.tester_buffer.items():
-            classification_score_on_test = single_tester.test(testing_loop,
-                                                              use_epochs=use_epochs,
-                                                              no_steps_to_estimate=no_steps_to_estimate,
-                                                              prepare_figs=prepare_figs,
-                                                              save_figs=save_figs,
-                                                              figs_label=figs_label)
+            classification_score_on_test, predictions = single_tester.test(testing_loop,
+                                                                           use_epochs=use_epochs,
+                                                                           no_steps_to_estimate=no_steps_to_estimate,
+                                                                           prepare_figs=prepare_figs,
+                                                                           save_figs=save_figs,
+                                                                           figs_label=figs_label)
             testing_scores[single_tester_name] = copy(classification_score_on_test)
+            predictions_buffer[single_tester_name] = predictions
 
-        return {'Testing scores': testing_scores}
+        return testing_scores, predictions_buffer
