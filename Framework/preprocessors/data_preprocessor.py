@@ -453,7 +453,7 @@ class DataPreprocessor(PreprocessorTypes):
             filtered_keys = [x for x in data_paths.keys() if 'Test' in x]
 
             for testing_folder in filtered_keys:
-                get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=mix_test,
+                get_saving_path_test = lambda measurement_folder: self.get_saving_path(mix_bool=True,
                                                                                        preprocessing_type=preprocessing_type,
                                                                                        additional_folder_label=additional_folder_label,
                                                                                        data_type=testing_folder,
