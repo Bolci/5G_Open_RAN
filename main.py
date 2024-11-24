@@ -13,6 +13,7 @@ from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_g
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.postprocessor_utils import get_print_message
+from Framework.postprocessors.graph_worker import get_distribution_plot
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -87,7 +88,7 @@ def main(path, args):
 
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                            args.preprocesing_type,
-                                                           rewrite_data = True,
+                                                           rewrite_data = False,
                                                            merge_files = True,
                                                            mix_test = True,
                                                            split_train_into_train_and_valid=True)
@@ -191,6 +192,7 @@ def main(path, args):
     print(valid_scores)
 
     #test data loader and loop
+    predictions_buffer = []
 
     for id_dat, single_test_dataset in enumerate(datasets['Test']):
         testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
@@ -198,6 +200,14 @@ def main(path, args):
         print("=============================")
         print(f'Test scores, dataset_id {id_dat}')
         print(f"Dataset path is: {paths_for_datasets['Test'][id_dat]}")
+        print(test_scores)
+        predictions_buffer.append(predictions)
+
+    fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer)
+
+    graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
+    fig_distribution.savefig(graph_valid_test_distribution)
+
 
     '''
     for tester_label, single_scores in test_scores.items():
