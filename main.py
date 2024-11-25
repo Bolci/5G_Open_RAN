@@ -30,6 +30,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
     model.to(device)
     criterion.to(device)
 
+
     #do one validation loop to ini everything
     _, _, _ = valid_loop(dataloaders['Valid'][0],
                       model,
@@ -80,6 +81,7 @@ def main(path, args):
 
     # Dataset_paths
     all_paths = get_all_paths(path)
+    preprocesing_type = 'abs_only_multichannel'
 
     #Data preparing according to preprocessing
     data_preprocessor = DataPreprocessor()
@@ -87,7 +89,7 @@ def main(path, args):
     data_preprocessor.set_original_seg(path["True_sequence_path"])
 
     paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
-                                                           args.preprocesing_type,
+                                                           'abs_only_multichannel',
                                                            rewrite_data = False,
                                                            merge_files = True,
                                                            mix_test = True,
@@ -96,7 +98,7 @@ def main(path, args):
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
 
-    '''
+
     model = LSTMAutoencoderCustom(input_dimensions=72,
                                   expansion_dim=args.expansion_dim,
                                   no_layers_per_module=args.no_layers_per_module,
@@ -104,8 +106,8 @@ def main(path, args):
                                   init_channels=args.init_channels,
                                   dropout=args.dropout,
                                   device=device)
-    '''
-    model = CNNAutoencoder(48)
+
+    #model = CNNAutoencoder(48)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -114,7 +116,7 @@ def main(path, args):
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
 
     #preparing saving paths
-    saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
+    saving_folder_name = f"Try_Preprocessing={preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
 
     if not os.path.exists(saving_path):
@@ -203,18 +205,16 @@ def main(path, args):
         print(test_scores)
         predictions_buffer.append(predictions)
 
+        for tester_label, single_score_type_value in test_scores.items():
+            wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
+
     fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
 
-
-    '''
-    for tester_label, single_scores in test_scores.items():
-        for single_scores_type_label, single_score_type_value in test_scores.items():
-            wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
     wandb.finish()
-    '''
+
 
 
 if __name__ == "__main__":
@@ -256,7 +256,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # os.environ["WANDB_SILENT"] = "true"
-    '''
+
     wandb.init(
         project="Anomaly_detection",
         entity="OPEN_5G_RAN_team",
@@ -264,6 +264,6 @@ if __name__ == "__main__":
         config=vars(parser.parse_args()),
         mode="online",
         # tags=[f"NewV{i}.{j}.4"],
-    )'''
+    )
 
     main(paths_config, args)
