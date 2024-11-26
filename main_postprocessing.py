@@ -2,6 +2,7 @@ import os.path
 
 import matplotlib.pyplot as plt
 
+from Framework.Model_bank.transformer_ae import TransformerAutoencoder
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from Framework.utils.utils import load_json_as_dict
 from Framework.loops.loops import test_loop, test_loop_general
