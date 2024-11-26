@@ -60,7 +60,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                                         criterion,
                                                         device=device)
 
-        wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
+        # wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
@@ -120,7 +120,7 @@ def main(path, args):
 
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}_{folder_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
-    wandb.log({"saving_dir": saving_folder_name})
+    wandb.log({"saving_dir": saving_folder_name}) if args.wandb_log else None
 
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
@@ -266,17 +266,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
     )
+    parser.add_argument(
+        "--wandb_log", type=bool, default=False, help="Log to wandb"
+    )
     args = parser.parse_args()
 
     # os.environ["WANDB_SILENT"] = "true"
-    '''
-    wandb.init(
-        project="Anomaly_detection",
-        entity="OPEN_5G_RAN_team",
-        name="all_50_complex",
-        config=vars(parser.parse_args()),
-        mode="online",
-        # tags=[f"NewV{i}.{j}.4"],
-    )'''
+    if args.wandb_log:
+        wandb.init(
+            project="Anomaly_detection",
+            entity="OPEN_5G_RAN_team",
+            #name="all_50_complex",
+            config=vars(parser.parse_args()),
+            mode="online",
+            #tags=[f"without scheduler"]
+        )
 
     main(paths_config, args)
