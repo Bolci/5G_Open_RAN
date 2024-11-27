@@ -60,7 +60,8 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                                         criterion,
                                                         device=device)
 
-        # wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
+        if wandb.run is not None:
+            wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
         valid_loss_all_save.append(valid_loss_all)
@@ -120,7 +121,8 @@ def main(path, args):
 
     saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}_{folder_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
-    wandb.log({"saving_dir": saving_folder_name}) if args.wandb_log else None
+    if wandb.run is not None:
+        wandb.log({"saving_dir": saving_folder_name})
 
     if not os.path.exists(saving_path):
         os.makedirs(saving_path)
@@ -207,19 +209,19 @@ def main(path, args):
         print(f"Dataset path is: {paths_for_datasets['Test'][id_dat]}")
         print(test_scores)
         predictions_buffer.append(predictions)
+        if wandb.run is not None:
+            for tester_label, single_scores in test_scores.items():
+                for single_scores_type_label, single_score_type_value in test_scores.items():
+                    wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
 
     fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
+    if wandb.run is not None:
+        wandb.finish()
 
 
-    '''
-    for tester_label, single_scores in test_scores.items():
-        for single_scores_type_label, single_score_type_value in test_scores.items():
-            wandb.log({f"tester = {tester_label}, type={single_scores_type_label}": single_score_type_value})
-    wandb.finish()
-    '''
 
 
 if __name__ == "__main__":
@@ -228,7 +230,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=3, help="Number of epochs"
+        "--epochs", type=int, default=1, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
