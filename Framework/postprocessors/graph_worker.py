@@ -118,7 +118,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
         scores = ""
         for value in performance[id_dataset].values():
             scores += f"{value:.3f}, "
-        ax[0, id_dataset+1].set_title(f'Test_dataset {id_dataset}-{scores}')
+        ax[0, id_dataset+1].set_title(f'Test_dataset {id_dataset}')
 
         # Add table with metrics below the graph
         table_data = []
