@@ -87,9 +87,10 @@ class Tester:
 
         testing_scores = {}
         predictions_buffer = {}
+        metrics_buffer = {}
 
         for single_tester_name, single_tester in self.tester_buffer.items():
-            classification_score_on_test, predictions = single_tester.test(testing_loop,
+            classification_score_on_test, predictions, metrics = single_tester.test(testing_loop,
                                                                            use_epochs=use_epochs,
                                                                            no_steps_to_estimate=no_steps_to_estimate,
                                                                            prepare_figs=prepare_figs,
@@ -97,5 +98,6 @@ class Tester:
                                                                            figs_label=figs_label)
             testing_scores[single_tester_name] = copy(classification_score_on_test)
             predictions_buffer[single_tester_name] = predictions
+            metrics_buffer[single_tester_name] = metrics
 
-        return testing_scores, predictions_buffer
+        return testing_scores, predictions_buffer, metrics_buffer

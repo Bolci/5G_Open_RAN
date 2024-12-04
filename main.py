@@ -200,21 +200,25 @@ def main(path, args):
 
     #test data loader and loop
     predictions_buffer = []
+    performance = []
+    metrics_buffer = []
 
     for id_dat, single_test_dataset in enumerate(datasets['Test']):
         testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
-        test_scores, predictions = tester.test_data(testing_loop=testing_loop)
+        test_scores, predictions, metrics = tester.test_data(testing_loop=testing_loop)
         print("=============================")
         print(f'Test scores, dataset_id {id_dat}')
         print(f"Dataset path is: {paths_for_datasets['Test'][id_dat]}")
         print(test_scores)
         predictions_buffer.append(predictions)
+        performance.append(test_scores)
+        metrics_buffer.append(metrics)
         if wandb.run is not None:
             for tester_label, single_scores in test_scores.items():
                 for single_scores_type_label, single_score_type_value in test_scores.items():
                     wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
 
-    fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer)
+    fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)

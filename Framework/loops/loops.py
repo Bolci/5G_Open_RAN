@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from copy import copy
 import torch.nn as nn
-
+from sklearn.metrics import precision_score, recall_score, f1_score
 from typing import Callable
 
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
@@ -116,7 +116,8 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
         The classification score and a list of predicted results.
     """
     predicted_results = []
-
+    true_labels = []
+    predicted_labels = []
     no_samples = len(dataloader_test)
     counter_var_0 = 0
 
@@ -128,14 +129,21 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X).item()
 
+            predicted_label = 1 if test_loss > threshold else 0
+            predicted_labels.append(predicted_label)
+            true_labels.append(y.item())
+
             if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
                 counter_var_0 +=1
 
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
     classification_score_0 = float(counter_var_0)/float(no_samples)
-
-    return classification_score_0, predicted_results
+    precision = precision_score(true_labels, predicted_labels)
+    recall = recall_score(true_labels, predicted_labels)
+    f1 = f1_score(true_labels, predicted_labels)
+    classification_score_0 = f1
+    return classification_score_0, predicted_results, (precision, recall, f1)
 
 
 def test_loop_general(dataloader_test,
@@ -145,6 +153,8 @@ def test_loop_general(dataloader_test,
               device="cuda"):
 
     predicted_results = []
+    true_labels = []
+    predicted_labels = []
     correct_classification_counter = 0
     no_samples = len(dataloader_test)
 
@@ -156,10 +166,19 @@ def test_loop_general(dataloader_test,
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X).item()
 
+            predicted_label = predict_class(test_loss)
+            predicted_labels.append(predicted_label)
+            true_labels.append(y.item())
+
             if y == predict_class(test_loss):
                 correct_classification_counter += 1
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
 
     classification_score = correct_classification_counter/no_samples
-    return classification_score, predicted_results
+    precision = precision_score(true_labels, predicted_labels)
+    recall = recall_score(true_labels, predicted_labels)
+    f1 = f1_score(true_labels, predicted_labels)
+
+    classification_score = f1
+    return classification_score, predicted_results, (precision, recall, f1)

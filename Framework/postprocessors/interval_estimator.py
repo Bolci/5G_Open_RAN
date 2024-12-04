@@ -95,9 +95,9 @@ class IntervalEstimatorMinMax(PostprocessorGeneral):
 
         Returns:
         """
-        score, predictions = testing_loop(self.metric_function_interval)
+        score, predictions, metrics = testing_loop(self.metric_function_interval)
 
-        return score, predictions
+        return score, predictions, metrics
 
 
 class IntervalEstimatorStd(PostprocessorGeneral):
@@ -175,19 +175,21 @@ class IntervalEstimatorStd(PostprocessorGeneral):
             boundaries (tuple): Range of standard deviation values to evaluate.
 
         Returns:
-            tuple: Ranges of standard deviation values and corresponding classification scores.
+            # tuple: Ranges of standard deviation values and corresponding classification scores.
         """
 
         ranges = np.linspace(*boundaries, 19)
 
         scores = []
         predictions = []
+        metrics = []
         for std_val in ranges:
             self.std_val_threshold = std_val
-            score, predictions = testing_loop(self.metric_function_std)
+            score, predictions, _metrics = testing_loop(self.metric_function_std)
             scores.append(score)
+            metrics.append(_metrics)
 
-        return ranges, scores, predictions
+        return ranges, scores, predictions, metrics
 
 
     def test(self,
@@ -213,11 +215,12 @@ class IntervalEstimatorStd(PostprocessorGeneral):
 
         """
 
-        ranges, scores, predictions = self.std_diagram(testing_loop)
+        ranges, scores, predictions, metrics = self.std_diagram(testing_loop)
         max_id = np.argmax(scores)
 
         max_sigma = ranges[max_id]
         max_score = scores[max_id]
+        metrics = metrics[max_id]
 
 
         if prepare_figs:
@@ -239,6 +242,6 @@ class IntervalEstimatorStd(PostprocessorGeneral):
                 fig.savefig(saving_path)
             plt.close(fig)
 
-        return max_score, predictions
+        return max_score, predictions, metrics
     
     
