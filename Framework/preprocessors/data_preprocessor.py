@@ -200,7 +200,10 @@ class DataPreprocessor(PreprocessorTypes):
             path (str): The path to the .mat file.
         """
         mat_file = load_mat_file(path)
-        pss_sss_raw = mat_file['rxGridSSBurst']
+        for key in mat_file.keys():
+            if 'rxGridSSBurst' in key:
+                pss_sss_raw = mat_file[key]
+                break
         pss_sss_raw = DataPreprocessorFunctions.mean_by_quaters(pss_sss_raw)
         self.original_seq = pss_sss_raw
 
@@ -265,6 +268,13 @@ class DataPreprocessor(PreprocessorTypes):
             label = buffer['labels'][id_x]
             matrix_merge = None
 
+            # folder may use different pss/sss sequences
+            # extract the cellID from the file name (each folder contain files with the same cellID)
+            folder, filename = os.path.split(data_to_process[id_x][0])
+            k = filename.split("_").index('cellID')
+            cellID = filename.split("_")[k+1]
+
+            self.set_original_seg(os.path.join("Data_selection", f"pci{cellID}.mat"))
             for single_file_path in data_to_process[id_x]:
                 loaded_file = np.load(single_file_path)
                 preprocessed_data = self.possible_preprocessing[preprocessing_type](self.original_seq, loaded_file)

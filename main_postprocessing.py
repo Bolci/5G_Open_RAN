@@ -68,8 +68,8 @@ criterion = RMSELoss()
 #testing_loop = lambda threshold: test_loop(test_dataloader, model, criterion, threshold, device=device)
 scores = tester.estimate_decision_lines()
 testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
-scores = tester.test_data(testing_loop=testing_loop,
-                          figs_label = "test_scores_over_threshold")
+scores, predictions, metrics = tester.test_data(testing_loop=testing_loop,
+                                                figs_label = "test_scores_over_threshold")
 print(scores)
 
 
@@ -86,13 +86,14 @@ data_preprocessor.set_original_seg(path["True_sequence_path"])
 #plt.show()
 paths_for_datasets = data_preprocessor.preprocess_data(all_paths,
                                                        'abs_only_multichannel',
-                                                       rewrite_data=True,
+                                                       rewrite_data=False,
                                                        merge_files=True,
-                                                       additional_folder_label='_test_meas_2')
+                                                       additional_folder_label='')
 
 datasets = get_datasets(paths_for_datasets)
 test_dataloader = datasets['Test'][0]
 testing_loop = lambda metric: test_loop_general(test_dataloader, model, criterion, metric, device=device)
 
-scores = tester.test_data(testing_loop=testing_loop,
-                          figs_label = "test_scores_over_threshold_meas2")
+scores, predictions, metrics = tester.test_data(testing_loop=testing_loop,
+                                                figs_label = "test_scores_over_threshold_test2")
+print(scores)
