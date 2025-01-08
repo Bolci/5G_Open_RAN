@@ -30,9 +30,9 @@ class Decoder(nn.Module):
     def forward(self, z):
         return self.decoder(z)
 
-class GANomaly(nn.Module):
+class Generator(nn.Module):
     def __init__(self, input_dim, latent_dim):
-        super(GANomaly, self).__init__()
+        super(Generator, self).__init__()
         self.encoder = Encoder(input_dim, latent_dim)
         self.decoder = Decoder(latent_dim, input_dim)
         self.re_encoder = Encoder(input_dim, latent_dim)
