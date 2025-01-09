@@ -218,10 +218,13 @@ def main(path, args):
                 for single_scores_type_label, single_score_type_value in test_scores.items():
                     wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
 
-    fig_distribution = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer)
+    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
+    for i, fig in enumerate(subfigures):
+        graph_valid_test_distribution_separated = os.path.join(saving_path, f"error_distribution_test{i}.png")
+        fig.savefig(graph_valid_test_distribution_separated)
     if wandb.run is not None:
         wandb.finish()
 
