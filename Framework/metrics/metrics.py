@@ -42,3 +42,19 @@ class RMSELoss(nn.Module):
             The computed RMSE.
         """
         return torch.sqrt(self.mse(yhat, y))
+
+
+class DSVDDLoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def forward(self, outputs, c, nu):
+        # Compute distance from center
+        dist = torch.sum((outputs - c) ** 2, dim=-1)
+        # SVDD loss as a combination of inliers and outliers
+        return torch.mean(dist) + nu * torch.mean(torch.max(dist - torch.mean(dist), torch.zeros_like(dist)))
+
+
+
+
