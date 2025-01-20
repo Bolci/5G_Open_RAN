@@ -1,7 +1,7 @@
 from Framework.postprocessors.threshold_estimator import ThresholdEstimator
 from Framework.postprocessors.PDF_comparator import PDFComparator
 from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax
-
+from Framework.postprocessors.dsvdd_estimator import DSVDDEstimator
 from typing import Callable, List
 from copy import copy
 
@@ -12,7 +12,8 @@ class TesterFactory:
             'threshold_estimator': lambda: ThresholdEstimator(),
             'pdf_comparator': lambda: PDFComparator(),
             'interval_estimator_min_max': lambda: IntervalEstimatorMinMax(),
-            'interval_estimator_std': lambda: IntervalEstimatorStd()
+            'interval_estimator_std': lambda: IntervalEstimatorStd(),
+            'DSVDD_estimator': lambda: DSVDDEstimator()
         }
 
     @staticmethod
@@ -35,7 +36,7 @@ class Tester:
                  valid_score_over_epoch_file_name: str,
                  valid_score_over_epoch_per_batch_file_name: str,
                  train_score_final_file_name: str,
-                 tests_to_perform: List[str] = ('interval_estimator_min_max', 'interval_estimator_std')):
+                 tests_to_perform: List[str] = ('DSVDD_estimator',)):
 
         self.result_folder_path = result_folder_path
         self.attempt_name = attempt_name
@@ -59,16 +60,18 @@ class Tester:
                                                     train_score_final_file_name=self.train_score_final_file_name)
 
     def estimate_decision_lines(self,
+                                model,
                                 use_epochs: int = 1,
                                 no_steps_to_estimate: int = 200,
-                                prepare_figs: bool = True,
-                                save_figs: bool = True,
+                                prepare_figs: bool = False,
+                                save_figs: bool = False,
                                 figs_label: str = "valid_scores_over_threshold"
                                 ) -> dict:
 
         valid_scores = {}
         for single_tester_name, single_tester in self.tester_buffer.items():
-            threshold, classification_score = single_tester.estimate_decision_lines(use_epochs=use_epochs,
+            threshold, classification_score = single_tester.estimate_decision_lines(model = model,
+                                                                                    use_epochs=use_epochs,
                                                                                     no_steps_to_estimate=no_steps_to_estimate,
                                                                                     save_figs=save_figs,
                                                                                     prepare_figs=prepare_figs,

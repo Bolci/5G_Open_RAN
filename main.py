@@ -5,16 +5,17 @@ from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
-from Framework.metrics.metrics import RMSELoss
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
-from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
-from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
-from Framework.Model_bank.transformer_ae import TransformerAutoencoder
+from Framework.metrics.metrics import RMSELoss, DSVDDLoss
+from Framework.models.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.models.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
+from Framework.models.AE_CNN_v2 import CNNAEV2
+from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.postprocessor_utils import get_print_message
 from Framework.postprocessors.graph_worker import get_distribution_plot
+from Framework.models.DSVDD import DeepSVDD, SimpleNet
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -25,7 +26,7 @@ import datetime
 
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.Adam(model.model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
 
     model.to(device)
@@ -108,8 +109,14 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    criterion = RMSELoss()
+    # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    model = DeepSVDD(SimpleNet()).to(device)
+
+    # Initialize the center
+    dataloaders = get_data_loaders(datasets, args.batch_size)
+    model.initialize_center(dataloaders['Train'][0], device)
+    # criterion = RMSELoss()
+    criterion = DSVDDLoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
@@ -120,7 +127,7 @@ def main(path, args):
     now = datetime.datetime.now()
     folder_name = now.strftime("%Y%m%d%H%M%S")
 
-    saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.model_name}_{folder_name}"
+    saving_folder_name = f"Try_Preprocessing={args.preprocesing_type}_no-epochs={args.epochs}_lr={args.learning_rate}_bs={args.batch_size}_model={model.name}_{folder_name}"
     saving_path = os.path.join(path['Saving_path'], saving_folder_name)
     if wandb.run is not None:
         wandb.log({"saving_dir": saving_folder_name})
@@ -195,7 +202,7 @@ def main(path, args):
                     train_score_final_file_name=train_final_score_per_batch)
 
     #valid loop
-    valid_scores = tester.estimate_decision_lines()
+    valid_scores = tester.estimate_decision_lines(model = model)
     print('Validation scores is:')
     print(valid_scores)
 
@@ -238,13 +245,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=150, help="Number of epochs"
+        "--epochs", type=int, default=80, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32535, help="Batch size"
+        "--batch_size", type=int, default=200000, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.0005, help="Learning rate"
+        "--learning_rate", type=float, default=0.01, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -274,7 +281,7 @@ if __name__ == "__main__":
         "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
-        "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
+        "--preprocesing_type", type=str, default="abs_only_by_one_sample", help="Log interval"
     )
     parser.add_argument(
         "--wandb_log", type=bool, default=False, help="Log to wandb"
