@@ -38,23 +38,27 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
         # Compute prediction and loss
         X_ = X.to(device)
         pred = model(X_)
-        loss = loss_fn(pred+(model.radius,), X_)
+        loss = loss_fn(pred, X_)
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
-        distances.extend(torch.norm(pred[0].detach() - model.c, dim=1).cpu().numpy())
-
+        # distances.extend(torch.norm(pred[0].detach() - model.c, dim=1).cpu().numpy())
+        dist = torch.sum((pred[0] - model.c) ** 2, dim=1)
+        distances.extend(dist.detach().cpu().numpy())
+        if model.name == "DeepSVDD":
+            model.radius = model.get_radius(torch.tensor(dist.detach().clone().requires_grad_(True)), model.nu)
+            # print(model.radius)
         if batch % 1000 == 0:
             loss, current = loss.item(), batch * len(X)
             print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-            print()
     train_loss /= num_batches
     # radius = np.percentile(distances, 100 * (1 - model.nu))
-    radius = np.max(distances)*0.99
-    model.radius = radius
+    # radius = np.max(distances)*0.99
+    # model.radius = radius
+    # print(radius)
     return train_loss
 
 def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
@@ -81,20 +85,16 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     """
     test_losses_to_print = []
     test_losses_score = []
-    distances = []
+    preds = []
     with torch.no_grad():
         for X, y in dataloader:
             X_ = X.to(device)
             pred = model(X_)
-            test_loss = loss_fn(pred+(model.radius,), X_).item()
+            test_loss = loss_fn(pred, X_).item()
             test_losses_score.append(copy(test_loss))
-
             if not is_train:
                 test_losses_to_print.append([copy(y.item()), copy(test_loss)])
-            distances.extend(torch.norm(pred[0] - model.c, dim=1).cpu().numpy())
 
-        radius = np.max(distances)*0.99
-        print([0 if distance.all() <= radius else 1 for distance in distances])
     test_loss_mean = np.mean(np.asarray(test_losses_score))
     print(f"Avg loss: {test_loss_mean:>8f} \n")
     return test_loss_mean, test_losses_to_print, test_losses_score
@@ -171,17 +171,18 @@ def test_loop_general(dataloader_test,
 
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X).item()
-
-            predicted_label = predict_class(pred[0])
+            # distance = (torch.norm(pred[0].detach() - model.c, dim=1).cpu().numpy())
+            predicted_label = predict_class(pred)
             predicted_labels.append(predicted_label)
             true_labels.append(y.item())
 
-            if y == predict_class(pred[0]):
+            if y == predicted_label:
                 correct_classification_counter += 1
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
 
     classification_score = correct_classification_counter/no_samples
+    # print(f"Classification score: {classification_score}")
     precision = precision_score(true_labels, predicted_labels)
     recall = recall_score(true_labels, predicted_labels)
     f1 = f1_score(true_labels, predicted_labels)

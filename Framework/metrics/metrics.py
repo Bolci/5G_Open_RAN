@@ -51,15 +51,20 @@ class DSVDDLoss(nn.Module):
     @staticmethod
     def forward(items, truth):
         outputs, c, nu, radius = items
-        # Compute distances of outputs to the center
-        distances = torch.norm(outputs - c, dim=1)
-        # Encourage clustering of outputs close to c
-        loss = torch.mean(distances)
-        # Stronger regularization to prevent trivial outputs
-        penalty = torch.mean((distances ** 2))
-        # Penalize for predictions outside the hypersphere
-        outside_hypersphere_penalty = torch.mean((distances > radius).float() * (distances - radius) ** 2)
-        return loss + nu * penalty + 1e-4 * torch.mean(outputs ** 2) + outside_hypersphere_penalty
+        # # Compute distances of outputs to the center
+        # # outputs -> shape (1, 1, n_features)
+        # # c -> shape (1, 1, n_features)
+        # distances = torch.norm(outputs - c, dim=1)
+        # # Encourage clustering of outputs close to c
+        # loss = torch.mean(distances)
+        # # Stronger regularization to prevent trivial outputs
+        # penalty = torch.mean((distances ** 2))
+        # # return loss + nu * penalty + torch.mean(outputs ** 2)
+        dist = torch.sum((outputs - c) ** 2, dim=1)
+        scores = dist - radius ** 2
+        loss = radius ** 2 + (1 / nu) * torch.mean(torch.max(torch.zeros_like(scores), scores))
+        return loss
+
 
 
 

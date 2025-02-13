@@ -27,7 +27,7 @@ import datetime
 def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
     dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
+    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=1.0, total_iters=no_epochs)
 
     model.to(device)
     criterion.to(device)
@@ -51,7 +51,8 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        scheduler.step()
+        if epoch > round(no_epochs * 0.25):
+            scheduler.step()
         after_lr = optimizer.param_groups[0]["lr"]
         print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
@@ -245,13 +246,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=80, help="Number of epochs"
+        "--epochs", type=int, default=2, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=200000, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.01, help="Learning rate"
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
