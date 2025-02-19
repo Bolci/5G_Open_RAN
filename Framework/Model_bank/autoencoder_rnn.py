@@ -27,9 +27,8 @@ class RNNAutoencoder(nn.Module):
         self.decoder.add_module("output", self.unit(in_dim, input_dim, batch_first=True))
 
     def forward(self, input):
-        # X is of shape [batch, 1, 72]  -- only one feature
-        x = input.permute(0, 2, 1)
-
+        # input is of shape [batch, 50, 72]  -- only one feature
+        x = input
         # Encoding the input sequence
         for layer in self.encoder:
             x, _ = layer(x)
@@ -40,8 +39,6 @@ class RNNAutoencoder(nn.Module):
             x, _ = layer(x)
             if i < len(self.decoder) - 1:
                 x = nn.functional.dropout(x, self.dropout, self.training)
-
-        x = input.permute(0, 2, 1)
         return x
 
 

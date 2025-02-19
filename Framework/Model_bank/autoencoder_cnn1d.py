@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class Autoencoder1D(nn.Module):
-    def __init__(self, input_length=72, num_layers=4, base_channels=16, kernel=4, dropout=0.1):
+    def __init__(self, input_length=50, num_layers=4, base_channels=16, kernel=4, dropout=0.1):
         super(Autoencoder1D, self).__init__()
         self.name = "cnn1d_ae"
         self.num_layers = num_layers
@@ -57,7 +57,7 @@ class Autoencoder1D(nn.Module):
         self.decoder = nn.Sequential(*decoder_layers)
 
     def forward(self, x):
-        # x - [batch, 1, 72]
+        # x - [batch, 50, 72]
         for layer in self.encoder:
             x = layer(x)
         for layer in self.decoder:
