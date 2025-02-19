@@ -4,15 +4,16 @@ import torch.nn.functional as F
 
 
 class Autoencoder1D(nn.Module):
-    def __init__(self, input_length=50, num_layers=4, base_channels=16, kernel=4, dropout=0.1):
+    def __init__(self, input_length=72, in_channels=48, num_layers=4, base_channels=128, kernel=4, dropout=0.1):
         super(Autoencoder1D, self).__init__()
         self.name = "cnn1d_ae"
         self.num_layers = num_layers
         self.input_length = input_length
+        self.in_channels = in_channels
 
         # Encoder
         encoder_layers = []
-        in_channels = 1
+        # in_channels = 1
         out_channels = base_channels
         current_length = input_length
         self.intermediate_lengths = [input_length]
@@ -53,7 +54,7 @@ class Autoencoder1D(nn.Module):
             out_channels //= 2
             current_length = expected_output_size
 
-        decoder_layers.append(nn.Conv1d(in_channels, 1, kernel_size=3, padding=1))  # Final reconstruction layer
+        decoder_layers.append(nn.Conv1d(in_channels, self.in_channels, kernel_size=3, padding=1))  # Final reconstruction layer
         self.decoder = nn.Sequential(*decoder_layers)
 
     def forward(self, x):
@@ -63,3 +64,8 @@ class Autoencoder1D(nn.Module):
         for layer in self.decoder:
             x = layer(x)
         return x
+
+
+model = Autoencoder1D()
+x = torch.randn(64, 48, 72)
+model(x)

@@ -10,6 +10,8 @@ from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV
 from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.Model_bank.transformer_ae import TransformerAutoencoder
+from Framework.Model_bank.autoencoder_cnn1d import Autoencoder1D
+from Framework.Model_bank.autoencoder_rnn import RNNAutoencoder
 from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
@@ -111,7 +113,9 @@ def main(path, args):
     # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
     options = [64, 32, 16, 8, 4]
     hidden_dims = options[:args.num_layers]
-    model = LSTMAutoencoder(72, hidden_dims, args.dropout)
+    # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
+    model = Autoencoder1D()
+    # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (

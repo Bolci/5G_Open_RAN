@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 class RNNAutoencoder(nn.Module):
-    def __init__(self, input_dim, hidden_dims, unit_type="lstm", dropout=0.2):
+    def __init__(self, input_dim=72, hidden_dims=[64, 32, 16], unit_type="lstm", dropout=0.2):
         super(RNNAutoencoder, self).__init__()
         self.name = "rnn_ae"
         if unit_type == "lstm":
