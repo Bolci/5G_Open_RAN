@@ -108,7 +108,10 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    options = [64, 32, 16, 8, 4]
+    hidden_dims = options[:args.num_layers]
+    model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     criterion = RMSELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
@@ -277,7 +280,7 @@ if __name__ == "__main__":
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
     )
     parser.add_argument(
-        "--wandb_log", type=bool, default=False, help="Log to wandb"
+        "--wandb_log", type=bool, default=True, help="Log to wandb"
     )
     args = parser.parse_args()
 
