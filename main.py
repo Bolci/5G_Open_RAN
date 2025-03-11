@@ -291,16 +291,16 @@ if __name__ == "__main__":
         "--wandb_log", type=bool, default=True, help="Log to wandb"
     )
     args = parser.parse_args()
-    for i in range(5):
-        # os.environ["WANDB_SILENT"] = "true"
-        if args.wandb_log:
-            wandb.init(
-                project="Anomaly_detection",
-                entity="OPEN_5G_RAN_team",
-                #name="all_50_complex",
-                config=vars(parser.parse_args()),
-                mode="online"
-                # tags=[f"VAE_positional_enc"]
-            )
 
-        main(paths_config, args)
+    # os.environ["WANDB_SILENT"] = "true"
+    if args.wandb_log:
+        wandb.init(
+            project="Anomaly_detection",
+            entity="OPEN_5G_RAN_team",
+            #name="all_50_complex",
+            config=vars(parser.parse_args()),
+            mode="online"
+            # tags=[f"VAE_positional_enc"]
+        )
+
+    main(paths_config, args)
