@@ -2,25 +2,56 @@ import torch
 import torch.nn as nn
 
 
-class DeepSVDD(nn.Module):
+class SimpleNet(nn.Module):
     def __init__(self):
-        super(DeepSVDD, self).__init__()
-        self.features = nn.Sequential(
-             nn.Conv1d(1, 8, kernel_size=3, padding=1),
-             nn.ReLU(),
-             nn.MaxPool1d(2),
-             nn.Conv1d(8, 16, kernel_size=3, padding=1),
-             nn.ReLU(),
-             nn.MaxPool1d(2),
-             nn.Conv2d(16, 32, kernel_size=3, padding=1),
-             nn.ReLU(),
-             nn.MaxPool1d(2),
-            )
-        self.flatten = nn.Flatten(start_dim=1)
-        self.fc = nn.Linear(288, 32)  # We will dynamically set this
+        super(SimpleNet, self).__init__()
+        self.fc1 = nn.Linear(72, 64)
+        self.fc2 = nn.Linear(64, 56)
+        self.fc3 = nn.Linear(56, 48)
+        self.fc4 = nn.Linear(48, 40)
 
     def forward(self, x):
-        x = self.features(x)
-        x = self.fc(self.flatten(x))
-
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.relu(self.fc3(x))
+        x = self.fc4(x)
         return x
+
+
+# Deep SVDD Model
+class DeepSVDD:
+    def __init__(self, model, nu=0.1):
+        self.model = model
+        self.nu = nu  # Fraction of outliers
+        self.c = None  # Center of the hypersphere
+        self.model_name = "DeepSVDD"
+
+    # Initialize center c as the mean of the initial data points
+    def initialize_center(self, data_loader, device):
+        n_samples = 0
+        c = torch.zeros(self.model.fc4.out_features, device=device)
+        self.model.eval()
+
+        with torch.no_grad():
+            for x, _ in data_loader:
+                x = x.to(device).squeeze()
+                outputs = self.model(x)
+                n_samples += outputs.shape[0]
+                c += torch.sum(outputs, dim=0)
+
+        c /= n_samples
+
+        # Avoid center being too close to zero
+        c[(abs(c) < 1e-6)] = 1e-6
+
+        self.c = c
+
+    def forward(self, x):
+        return self.model(x)
+
+    # # Deep SVDD Loss function
+    def loss_function(self, outputs, c, nu):
+        # Compute distance from center
+        dist = torch.sum((outputs - self.c) ** 2, dim=-1)
+        # SVDD loss as a combination of inliers and outliers
+        return torch.mean(dist) + self.nu * torch.mean(torch.max(dist - torch.mean(dist), torch.zeros_like(dist)))
