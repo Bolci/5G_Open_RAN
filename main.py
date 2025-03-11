@@ -5,11 +5,12 @@ from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
-from Framework.metrics.metrics import RMSELoss
+from Framework.metrics.metrics import RMSELoss, VAELoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
 from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
 from Framework.Model_bank.transformer_ae import TransformerAutoencoder
+from Framework.Model_bank.transformer_vae import TransformerVAE
 from Framework.Model_bank.autoencoder_cnn1d import Autoencoder1D
 from Framework.Model_bank.autoencoder_rnn import RNNAutoencoder
 from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
@@ -110,13 +111,16 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    options = [64, 32, 16, 8, 4]
-    hidden_dims = options[:args.num_layers]
+    model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TransformerVAE(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+    #                                dropout=args.dropout)
+    # options = [64, 32, 16, 8, 4]
+    # hidden_dims_ = options[:args.num_layers]
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
-    model = Autoencoder1D()
+    # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     criterion = RMSELoss()
+    # criterion = VAELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
         train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
@@ -245,13 +249,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=150, help="Number of epochs"
+        "--epochs", type=int, default=100, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.0005, help="Learning rate"
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -272,13 +276,13 @@ if __name__ == "__main__":
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=32, help="Embedding dimension"
+        "--embed_dim", type=int, default=10, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=8, help="Multihead attention heads"
+        "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=1, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
@@ -287,16 +291,16 @@ if __name__ == "__main__":
         "--wandb_log", type=bool, default=True, help="Log to wandb"
     )
     args = parser.parse_args()
+    for i in range(5):
+        # os.environ["WANDB_SILENT"] = "true"
+        if args.wandb_log:
+            wandb.init(
+                project="Anomaly_detection",
+                entity="OPEN_5G_RAN_team",
+                #name="all_50_complex",
+                config=vars(parser.parse_args()),
+                mode="online"
+                # tags=[f"VAE_positional_enc"]
+            )
 
-    # os.environ["WANDB_SILENT"] = "true"
-    if args.wandb_log:
-        wandb.init(
-            project="Anomaly_detection",
-            entity="OPEN_5G_RAN_team",
-            #name="all_50_complex",
-            config=vars(parser.parse_args()),
-            mode="online",
-            #tags=[f"without scheduler"]
-        )
-
-    main(paths_config, args)
+        main(paths_config, args)

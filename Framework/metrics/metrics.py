@@ -49,7 +49,7 @@ class DSVDDLoss(nn.Module):
         super().__init__()
 
     @staticmethod
-    def forward(self, outputs, c, nu):
+    def forward(outputs, c, nu):
         # Compute distance from center
         dist = torch.sum((outputs - c) ** 2, dim=-1)
         # SVDD loss as a combination of inliers and outliers
@@ -57,4 +57,14 @@ class DSVDDLoss(nn.Module):
 
 
 
+class VAELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
 
+    @staticmethod
+    def forward(output, x):
+        recon_x, mu, log_var = output
+        """Computes VAE loss: MSE reconstruction loss + KL divergence"""
+        recon_loss = nn.MSELoss()(recon_x, x)
+        kl_div = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
+        return recon_loss + kl_div
