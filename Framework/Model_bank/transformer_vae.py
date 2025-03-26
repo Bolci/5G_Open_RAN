@@ -5,13 +5,14 @@ import math
 class PositionalEncoding(nn.Module):
     def __init__(self, embed_dim, max_len=48):
         super(PositionalEncoding, self).__init__()
-        pe = torch.zeros(max_len, embed_dim)
+        pe = torch.zeros(max_len, embed_dim if embed_dim % 2 == 0 else embed_dim + 1)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)  # (max_len, 1)
         # Compute the div term
         div_term = torch.exp(torch.arange(0, embed_dim, 2).float() * (-math.log(10000.0) / embed_dim))
         # Apply sin to even indices and cos to odd indices
         pe[:, 0::2] = torch.sin(position * div_term)  # Apply sin to even indices
         pe[:, 1::2] = torch.cos(position * div_term)  # Apply cos to odd indices
+        pe = pe[:, :embed_dim]  # Remove the extra dimension if embed_dim is odd
         # Add a batch dimension (1, max_len, d_model)
         pe = pe.unsqueeze(0)
         # Register as a buffer (non-trainable)
@@ -19,6 +20,7 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x):
         return x + self.pe[:, :x.shape[1], :]
+
 class TransformerVAE(nn.Module):
     def __init__(self, input_dim: int = 72, embed_dim: int = 12, num_heads: int = 2, num_layers: int = 1, dropout=0.1):
         super(TransformerVAE, self).__init__()

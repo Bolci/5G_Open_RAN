@@ -81,7 +81,7 @@ def get_global_min_max(valid_predictions, test_predictions):
     return _min, _max
 
 
-def get_distribution_plot(valid_predictions, test_predictions, performance, metrics_buffer):
+def get_distribution_plot(valid_predictions, test_predictions, performance, metrics_buffer, decision_lines):
     get_global_min_max(valid_predictions, test_predictions)
     no_datasets_test = len(test_predictions)
 
@@ -94,6 +94,25 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
               label='Normalized Histogram valid class 0')
     ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='b',
               label='Normalized Histogram valid class 1')
+
+
+    # add decision line
+    if decision_lines is not None:
+        for tester_name, bounds in decision_lines:
+            if "min_max" in tester_name:
+                label = "Min-Max"
+                color = "g"
+            elif "std" in tester_name:
+                label = "STD"
+                color = "y"
+            elif "mad" in tester_name:
+                label = "MAD"
+                color = "m"
+            else:
+                label = "Unknown"
+                color = "k"
+            ax[0, 0].axvline(x=bounds[0], color=color, linestyle='--', label=f"{label}-lower bound")
+            ax[0, 0].axvline(x=bounds[1], color=color, linestyle='--', label=f"{label}-upper bound")
     ax[0, 0].set_title('Validation Error distribution')
     ax[0, 0].set_xlabel('Anomaly Score')
     ax[0, 0].set_ylabel('Density')
@@ -102,6 +121,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
 
     ax[0, 0].grid(True)
 
+
     subfigs = []
     for id_dataset, dataset_score in enumerate(test_predictions):
         class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
@@ -109,11 +129,32 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
               label='Normalized Histogram valid class 0')
         ax[0, id_dataset+1].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='b',
               label='Normalized Histogram valid class 1')
+
+        # add decision line
+        if decision_lines is not None:
+            for tester_name, bounds in decision_lines:
+                if "min_max" in tester_name:
+                    label = "Min-Max"
+                    color = "g"
+                elif "std" in tester_name:
+                    label = "STD"
+                    color = "y"
+                elif "mad" in tester_name:
+                    label = "MAD"
+                    color = "m"
+                else:
+                    label = "Unknown"
+                    color = "k"
+                ax[0, id_dataset+1].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
+                ax[0, id_dataset+1].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
+
+
         ax[0, id_dataset+1].set_ylim([0, 0.5])
         ax[0, id_dataset+1].legend()
         ax[0, id_dataset+1].grid(True)
         ax[0, id_dataset+1].set_xlabel('Anomaly Score')
         ax[0, id_dataset+1].set_ylabel('Density')
+
 
         scores = ""
         for value in performance[id_dataset].values():
@@ -146,6 +187,25 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
         ax2[0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0],
                                   alpha=0.5, color='b',
                                   label='Normalized Histogram valid class 1')
+
+        # add decision line
+        if decision_lines is not None:
+            for tester_name, bounds in decision_lines:
+                if "min_max" in tester_name:
+                    label = "Min-Max"
+                    color = "g"
+                elif "std" in tester_name:
+                    label = "STD"
+                    color = "y"
+                elif "mad" in tester_name:
+                    label = "MAD"
+                    color = "m"
+                else:
+                    label = "Unknown"
+                    color = "k"
+                ax2[0].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
+                ax2[0].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
+
         ax2[0].set_ylim([0, 0.5])
         ax2[0].legend()
         ax2[0].grid(True)

@@ -1,6 +1,6 @@
 from Framework.postprocessors.threshold_estimator import ThresholdEstimator
 from Framework.postprocessors.PDF_comparator import PDFComparator
-from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax
+from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax, IntervalEstimatorMAD
 
 from typing import Callable, List
 from copy import copy
@@ -12,7 +12,8 @@ class TesterFactory:
             'threshold_estimator': lambda: ThresholdEstimator(),
             'pdf_comparator': lambda: PDFComparator(),
             'interval_estimator_min_max': lambda: IntervalEstimatorMinMax(),
-            'interval_estimator_std': lambda: IntervalEstimatorStd()
+            'interval_estimator_std': lambda: IntervalEstimatorStd(),
+            'interval_estimator_mad': lambda: IntervalEstimatorMAD()
         }
 
     @staticmethod
@@ -35,7 +36,7 @@ class Tester:
                  valid_score_over_epoch_file_name: str,
                  valid_score_over_epoch_per_batch_file_name: str,
                  train_score_final_file_name: str,
-                 tests_to_perform: List[str] = ('interval_estimator_min_max', 'interval_estimator_std')):
+                 tests_to_perform: List[str] = ('interval_estimator_min_max', 'interval_estimator_std', 'interval_estimator_mad')):
 
         self.result_folder_path = result_folder_path
         self.attempt_name = attempt_name

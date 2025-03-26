@@ -53,7 +53,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        scheduler.step()
+        # scheduler.step()
         after_lr = optimizer.param_groups[0]["lr"]
         print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
 
@@ -229,8 +229,11 @@ def main(path, args):
             for tester_label, single_scores in test_scores.items():
                 for single_scores_type_label, single_score_type_value in test_scores.items():
                     wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
-
-    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer)
+    # get decision lines
+    decision_lines= []
+    for single_tester_name, single_tester in tester.tester_buffer.items():
+        decision_lines.append((single_tester_name, single_tester.get_decision_lines()))
+    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer, decision_lines)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)

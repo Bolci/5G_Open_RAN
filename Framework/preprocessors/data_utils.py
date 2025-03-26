@@ -15,7 +15,7 @@ def get_datasets(paths: dict, loader_function = lambda x: torch.load(x)):
         dict: A dictionary with keys 'Train', 'Valid', and 'Test', each containing a list of DatasetTemplate objects.
     """
     return_datsets = {'Train': [], 'Valid': [], 'Test': []}
-    paths['Test'] = natsorted(paths['Test'])
+    # print(paths)
     for dataset_type, paths in paths.items():
         for single_path in paths:
             new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)

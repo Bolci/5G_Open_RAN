@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch
+import torch.nn.functional as F
 
 class RMSELoss(nn.Module):
     """
@@ -58,13 +59,21 @@ class DSVDDLoss(nn.Module):
 
 
 class VAELoss(nn.Module):
-    def __init__(self):
+    def __init__(self, lambda_var=0.1):
         super().__init__()
+        self.lambda_var = lambda_var
 
-    @staticmethod
-    def forward(output, x):
+
+    def forward(self, output, x):
         recon_x, mu, log_var = output
-        """Computes VAE loss: MSE reconstruction loss + KL divergence"""
-        recon_loss = nn.MSELoss()(recon_x, x)
+
+        # Compute pixel-wise MSE loss
+        mse_loss = (recon_x - x) ** 2
+        recon_loss = mse_loss.mean()
+
+        # Penalize the variance of reconstruction errors
+        loss_variance = mse_loss.var()
+
+        # KL Divergence
         kl_div = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
-        return recon_loss + kl_div
+        return recon_loss + kl_div + self.lambda_var * loss_variance

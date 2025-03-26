@@ -151,7 +151,6 @@ def test_loop_general(dataloader_test,
               loss_fn: Callable,
               predict_class: Callable,
               device="cuda"):
-
     predicted_results = []
     true_labels = []
     predicted_labels = []
