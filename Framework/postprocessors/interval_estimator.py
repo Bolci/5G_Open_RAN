@@ -120,6 +120,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
     def __init__(self) -> None:
         super().__init__()
         self.std_val_threshold = 1
+
     
     def metric_function_std(self, loss_of_sample_x: float) -> int:
         """
@@ -176,7 +177,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
 
     def std_diagram(self,
                     testing_loop: Callable,
-                    boundaries: Tuple[int, int] = (1, 10)) -> Tuple[np.array, list, list]:
+                    boundaries: Tuple[int, int] = (1, 10)) -> Tuple[np.array, list, list, list]:
         """
         Creates a diagram of classification scores over different standard deviation thresholds.
 
@@ -224,6 +225,12 @@ class IntervalEstimatorStd(PostprocessorGeneral):
            Returns:
 
         """
+        if not self.sigma_estimated:
+            ranges, scores, predictions, metrics = self.std_diagram(testing_loop)
+            max_id = np.argmax(scores)
+            max_sigma = ranges[max_id]
+            self.std_val_threshold = max_sigma
+            self.sigma_estimated = True
 
         score, predictions, metrics = testing_loop(self.metric_function_std)
         return score, predictions, metrics
@@ -351,6 +358,13 @@ class IntervalEstimatorMAD(PostprocessorGeneral):
         Returns:
             Tuple containing the maximum classification score, predictions, and metrics corresponding to the best MAD multiplier.
         """
+        if not self.sigma_estimated:
+            ranges, scores, predictions, metrics = self.mad_diagram(testing_loop)
+            max_id = np.argmax(scores)
+            max_sigma = ranges[max_id]
+            self.mad_val_threshold = max_sigma
+            self.sigma_estimated = True
+
         score, predictions, metrics = testing_loop(self.metric_function_mad)
         return score, predictions, metrics
 

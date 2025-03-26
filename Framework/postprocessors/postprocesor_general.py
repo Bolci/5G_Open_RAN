@@ -24,6 +24,7 @@ class PostprocessorGeneral(ABC):
         self.train_score_final_file_full_path = None
 
         self.measured_decision_line = None
+        self.sigma_estimated = False
 
     def set_paths(self,
                   result_folder_path: str,
