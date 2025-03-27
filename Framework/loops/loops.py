@@ -34,15 +34,46 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     train_loss = 0.0
-
+    model.output_attention = True
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
         X_ = X.to(device)
-        pred = model(X_)
+        if model.model_name == "anomaly_transformer":
+            pred, series, prior, _ = model(X_)
+            # calculate Association discrepancy
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                series_loss += (torch.mean(my_kl_loss(series[u], (
+                        prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                               model.win_size)).detach())) + torch.mean(
+                    my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                       model.win_size)).detach(),
+                               series[u])))
+                prior_loss += (torch.mean(my_kl_loss(
+                    (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                            model.win_size)),
+                    series[u].detach())) + torch.mean(
+                    my_kl_loss(series[u].detach(), (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   model.win_size)))))
+            series_loss = series_loss / len(prior)
+            prior_loss = prior_loss / len(prior)
+        else:
+            pred = model(X_)
         loss = loss_fn(pred, X_)
         # Backpropagation
         optimizer.zero_grad()
-        loss.backward()
+        if model.model_name == "anomally_transformer":
+
+            loss1 = loss - 0.2 * series_loss
+            loss2 = loss + 0.2 * prior_loss
+            loss1.backward(retain_graph=True)
+            loss2.backward()
+            loss = loss1 + loss2
+        else:
+
+            loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
@@ -79,7 +110,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     """
     test_losses_to_print = []
     test_losses_score = []
-
+    model.output_attention = False
     with torch.no_grad():
         for X, y in dataloader:
             X_ = X.to(device)
@@ -122,7 +153,7 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
     predicted_labels = []
     no_samples = len(dataloader_test)
     counter_var_0 = 0
-
+    model.output_attention = False
     with torch.no_grad():
         for X, y in dataloader_test:
             if not (len(X.shape) == 3):
