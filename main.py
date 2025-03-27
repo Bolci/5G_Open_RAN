@@ -13,6 +13,7 @@ from Framework.Model_bank.transformer_ae import TransformerAutoencoder
 from Framework.Model_bank.transformer_vae import TransformerVAE
 from Framework.Model_bank.autoencoder_cnn1d import Autoencoder1D
 from Framework.Model_bank.autoencoder_rnn import RNNAutoencoder
+from Framework.Model_bank.anomaly_transformer import AnomalyTransformer
 from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
@@ -111,7 +112,7 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
     # model = TransformerVAE(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
     #                                dropout=args.dropout)
     # options = [64, 32, 16, 8, 4]
@@ -119,6 +120,7 @@ def main(path, args):
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
+    model = AnomalyTransformer(48, enc_in=72, c_out=72, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
     criterion = RMSELoss()
     # criterion = VAELoss()
 
@@ -233,7 +235,9 @@ def main(path, args):
     decision_lines= []
     for single_tester_name, single_tester in tester.tester_buffer.items():
         decision_lines.append((single_tester_name, single_tester.get_decision_lines()))
-    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer, decision_lines)
+
+    plot_names = path["Test_folders"]
+    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer, decision_lines, plot_names)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
@@ -252,7 +256,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=75, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
@@ -273,19 +277,19 @@ if __name__ == "__main__":
         "--init_channels", type=int, default=12, help="Learning rate"
     )
     parser.add_argument(
-        "--dropout", type=float, default=0.5, help="Learning rate"
+        "--dropout", type=float, default=0.3, help="Learning rate"
     )
     # parser.add_argument(
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=10, help="Embedding dimension"
+        "--embed_dim", type=int, default=64, help="Embedding dimension"
     )
     parser.add_argument(
         "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=1, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
@@ -302,7 +306,7 @@ if __name__ == "__main__":
             entity="OPEN_5G_RAN_team",
             #name="all_50_complex",
             config=vars(parser.parse_args()),
-            mode="online"
+            mode="online",
             # tags=[f"VAE_positional_enc"]
         )
 

@@ -6,7 +6,9 @@ from copy import copy
 import torch.nn as nn
 from sklearn.metrics import precision_score, recall_score, f1_score
 from typing import Callable
-
+def my_kl_loss(p, q):
+    res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
+    return torch.mean(torch.sum(res, dim=-1), dim=1)
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     """
     Trains the model for one epoch.
