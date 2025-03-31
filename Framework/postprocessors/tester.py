@@ -1,7 +1,8 @@
 from Framework.postprocessors.threshold_estimator import ThresholdEstimator
 from Framework.postprocessors.PDF_comparator import PDFComparator
 from Framework.postprocessors.interval_estimator import IntervalEstimatorStd, IntervalEstimatorMinMax, IntervalEstimatorMAD
-
+from Framework.postprocessors.PDF import IntervalEstimatorPDF
+from Framework.postprocessors.PDFadaptive import IntervalEstimatorPDFAdaptive
 from typing import Callable, List
 from copy import copy
 
@@ -13,7 +14,10 @@ class TesterFactory:
             'pdf_comparator': lambda: PDFComparator(),
             'interval_estimator_min_max': lambda: IntervalEstimatorMinMax(),
             'interval_estimator_std': lambda: IntervalEstimatorStd(),
-            'interval_estimator_mad': lambda: IntervalEstimatorMAD()
+            'interval_estimator_mad': lambda: IntervalEstimatorMAD(),
+            'interval_estimator_pdf': lambda: IntervalEstimatorPDF(),
+            'interval_estimator_pdf_adaptive': lambda: IntervalEstimatorPDFAdaptive()
+
         }
 
     @staticmethod

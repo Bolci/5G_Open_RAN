@@ -5,7 +5,7 @@ from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
-from Framework.metrics.metrics import RMSELoss, VAELoss
+from Framework.metrics.metrics import RMSELoss, VAELoss, unified_loss_fn, MSEwithVarianceLoss
 from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
 from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
 from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
@@ -122,6 +122,7 @@ def main(path, args):
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     model = AnomalyTransformer(48, enc_in=72, c_out=72, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
     criterion = RMSELoss()
+    # criterion = MSEwithVarianceLoss()
     # criterion = VAELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
