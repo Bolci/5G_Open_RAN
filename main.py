@@ -115,7 +115,7 @@ def main(path, args):
     # model = TransformerVAE(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
     #                                dropout=args.dropout)
     # options = [64, 32, 16, 8, 4]
-    # hidden_dims_ = options[:args.num_layers]
+    # hidden_dims = options[:args.num_layers]
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
@@ -254,13 +254,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=200, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.01, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -275,7 +275,7 @@ if __name__ == "__main__":
         "--init_channels", type=int, default=12, help="Learning rate"
     )
     parser.add_argument(
-        "--dropout", type=float, default=0.5, help="Learning rate"
+        "--dropout", type=float, default=0.2, help="Learning rate"
     )
     # parser.add_argument(
     #     "--log_interval", type=int, default=1, help="Log interval"
@@ -284,7 +284,7 @@ if __name__ == "__main__":
         "--embed_dim", type=int, default=10, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=2, help="Multihead attention heads"
+        "--num_heads", type=int, default=1, help="Multihead attention heads"
     )
     parser.add_argument(
         "--num_layers", type=int, default=1, help="Number of endoder and decoder layers"

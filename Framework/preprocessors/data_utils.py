@@ -18,7 +18,20 @@ def get_datasets(paths: dict, loader_function = lambda x: torch.load(x)):
     paths['Test'] = natsorted(paths['Test'])
     for dataset_type, paths in paths.items():
         for single_path in paths:
-            new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
+            if dataset_type == 'Train':
+                new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
+                # new_dataset.normalize_min_max()
+                new_dataset.normalize_standard()
+                # min = new_dataset.global_min
+                # max = new_dataset.global_max
+                mean = new_dataset.mean
+                std = new_dataset.std
+
+            else:
+                new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
+                # new_dataset.normalize_min_max(min, max)
+                new_dataset.normalize_standard(mean, std)
+            # new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
             return_datsets[dataset_type].append(copy(new_dataset))
     return return_datsets
 

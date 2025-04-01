@@ -41,6 +41,26 @@ class DatasetTemplate(Dataset):
             self.labels = None
             self.load_data()
 
+    def normalize_min_max(self, global_min: float = float('inf'), global_max: float = float('inf')):
+        self.global_min = global_min
+        self.global_max = global_max
+
+        if global_min == float('inf') or global_max == float('inf'):
+            self.global_min = min(global_min, self.data.min())
+            self.global_max = max(global_max, self.data.max())
+        else:
+            self.data = (self.data - self.global_min) / (global_max - self.global_min)
+
+    def normalize_standard(self, mean: float = float('inf'), std: float = float('inf')):
+        self.mean = mean
+        self.std = std
+
+        if mean == float('inf') or std == float('inf'):
+            self.mean = min(mean, self.data.mean())
+            self.std = min(std, self.data.std())
+        else:
+            self.data = (self.data - self.mean) / self.std
+
     def load_data(self):
         """
         Loads data from the specified data path and processes it.
@@ -64,9 +84,10 @@ class DatasetTemplate(Dataset):
             loaded_data = loaded_data.permute(0, 2, 1)
 
             # Normalize the data to the range [0, 1]
-            v_min, v_max = loaded_data.min(dim=-1, keepdim=True).values, loaded_data.max(dim=-1, keepdim=True).values
-            new_min, new_max = 0.0, 1.0
-            loaded_data = (loaded_data - v_min) / (v_max - v_min) * (new_max - new_min) + new_min
+            # v_min, v_max = loaded_data.min(dim=-1, keepdim=True).values, loaded_data.max(dim=-1, keepdim=True).values
+            # new_min, new_max = 0.0, 1.0
+            # loaded_data = (loaded_data - v_min) / (v_max - v_min) * (new_max - new_min) + new_min
+            # loaded_data = (loaded_data - self.global_min) / (self.global_max - self.global_min)
 
             # Extract the label from the data file name
             label = self.label_extraction_function(data_name)
