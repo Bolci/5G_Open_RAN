@@ -58,8 +58,33 @@ class DatasetTemplate(Dataset):
         if mean == float('inf') or std == float('inf'):
             self.mean = min(mean, self.data.mean())
             self.std = min(std, self.data.std())
+            self.data = (self.data - self.mean) / self.std
         else:
             self.data = (self.data - self.mean) / self.std
+
+    def normalize_mediam_IQR(self, med: float = float('inf'), iqr: float = float('inf')):
+        self.med = med
+        self.iqr = iqr
+
+        if med == float('inf') or iqr == float('inf'):
+            med = torch.median(self.data)
+            q1, q3 = torch.quantile(self.data, .10), torch.quantile(self.data, .90)
+            self.iqr = q3 - q1
+            self.med = med
+            self.data = (self.data - self.med) / self.iqr
+        else:
+            self.data = (self.data - self.med) / self.iqr
+
+    def normalize_log(self, offset: float = float('inf')):
+        self.offset = offset
+        if offset == float('inf'):
+            # If no offset is provided, set a default offset to 1.0
+            offset = 100.0
+            self.offset = offset
+
+        # Apply log normalization: ensure that data is non-negative.
+        # It is assumed that self.data contains non-negative values.
+        self.data = torch.log(self.data + offset)
 
     def load_data(self):
         """
