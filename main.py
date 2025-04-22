@@ -120,7 +120,7 @@ def main(path, args):
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
-    model = AnomalyTransformer(48, enc_in=72, c_out=72, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
+    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
     criterion = RMSELoss()
     # criterion = MSEwithVarianceLoss()
     # criterion = VAELoss()
