@@ -111,8 +111,9 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
             else:
                 label = "Unknown"
                 color = "k"
-            ax[0, 0].axvline(x=bounds[0], color=color, linestyle='--', label=f"{label}-lower bound")
-            ax[0, 0].axvline(x=bounds[1], color=color, linestyle='--', label=f"{label}-upper bound")
+            if bounds[0] is not None and bounds[1] is not None:
+                ax[0, 0].axvline(x=bounds[0], color=color, linestyle='--', label=f"{label}-lower bound")
+                ax[0, 0].axvline(x=bounds[1], color=color, linestyle='--', label=f"{label}-upper bound")
     ax[0, 0].set_title('Validation Error distribution')
     ax[0, 0].set_xlabel('Anomaly Score')
     ax[0, 0].set_ylabel('Density')
@@ -145,8 +146,9 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
                 else:
                     label = "Unknown"
                     color = "k"
-                ax[0, id_dataset+1].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
-                ax[0, id_dataset+1].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
+                if bounds[0] is not None and bounds[1] is not None:
+                    ax[0, id_dataset+1].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
+                    ax[0, id_dataset+1].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
 
 
         ax[0, id_dataset+1].set_ylim([0, 0.5])
@@ -203,8 +205,9 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
                 else:
                     label = "Unknown"
                     color = "k"
-                ax2[0].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
-                ax2[0].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
+                if bounds[0] is not None and bounds[1] is not None:
+                    ax2[0].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
+                    ax2[0].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
 
         ax2[0].set_ylim([0, 0.5])
         ax2[0].legend()

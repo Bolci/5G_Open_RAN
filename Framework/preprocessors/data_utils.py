@@ -24,21 +24,21 @@ def get_datasets(paths: dict, loader_function = lambda x: torch.load(x)):
                 # min = new_dataset.global_min
                 # max = new_dataset.global_max
 
-                # new_dataset.normalize_standard()
-                # mean = new_dataset.mean
-                # std = new_dataset.std
+                new_dataset.normalize_standard()
+                mean = new_dataset.mean
+                std = new_dataset.std
 
-                new_dataset.normalize_mediam_IQR()
-                iqr = new_dataset.iqr
-                med = new_dataset.med
+                # new_dataset.normalize_mediam_IQR()
+                # iqr = new_dataset.iqr
+                # med = new_dataset.med
                 # new_dataset.normalize_log()
                 # offset = new_dataset.offset
 
             else:
                 new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
                 # new_dataset.normalize_min_max(min, max)
-                # new_dataset.normalize_standard(mean, std)
-                new_dataset.normalize_mediam_IQR(iqr, med)
+                new_dataset.normalize_standard(mean, std)
+                # new_dataset.normalize_mediam_IQR(iqr, med)
                 # new_dataset.normalize_log(offset)
             # new_dataset = DatasetTemplate(single_path, loader_f=loader_function, load_all_data=True)
             return_datsets[dataset_type].append(copy(new_dataset))

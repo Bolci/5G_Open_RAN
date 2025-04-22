@@ -163,7 +163,7 @@ class DatasetTemplate(Dataset):
         """
         if self.load_all_data:
             # Retrieve data and label from memory
-            data = self.data[idx, :, :]
+            data = self.data[idx, :, 5:-5]
             label = self.labels[idx]
             return data, label
 
