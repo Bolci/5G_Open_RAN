@@ -57,11 +57,24 @@ class TransformerVAE(nn.Module):
 
     def forward(self, x):
         # Encode
+        batch, seq_len, features = x.size()
+
+        use_fft = True
+        add_temp_dev = False
+        if use_fft:
+            x_freq = torch.fft.rfft(x, dim=1)  # Outputs complex numbers (you might take magnitude/phase as features)
+            x= torch.abs(x_freq)
+
+        if add_temp_dev:
+            temporal_std = x.std(dim=1, keepdim=True)  # (B, 1, F)
+            x = torch.cat([x, temporal_std.expand(-1, 48, -1)], dim=2)  # (B, 48, 73)
 
         x = self.embedding(x)
         x = self.positional_encoding(x)  # Add positional encoding
         # x = self.dropout(x)
-        encoded = self.encoder(x)
+        encoded = self.encoder(x)  # shape: (batch_size, seq_len, embed_dim)
+        encoded = encoded.mean(dim=1)
+        # encoded = self.pooling(encoded)  # shape: (batch_size, embed_dim)
 
         # Latent space
         mu = self.fc_mu(encoded)
@@ -70,7 +83,14 @@ class TransformerVAE(nn.Module):
 
         # Decode
         z = self.fc_latent(z)
+
+        z = z.unsqueeze(1).repeat(1, seq_len, 1)
         decoded = self.decoder(z, z)
         decoded = self.fc_out(decoded)
 
+        if use_fft:
+            decoded = torch.fft.irfft(decoded, n=seq_len, dim=1)
+
+        if add_temp_dev:
+            decoded = decoded[:, :, :features]
         return decoded, mu, log_var
