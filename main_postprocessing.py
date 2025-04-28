@@ -2,14 +2,14 @@ import os.path
 
 import matplotlib.pyplot as plt
 
-from Framework.Model_bank.transformer_ae import TransformerAutoencoder
+from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 from Framework.utils.utils import load_json_as_dict
 from Framework.loops.loops import test_loop, test_loop_general
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoderV2
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
-from Framework.Model_bank.AE_CNN_v2 import CNNAEV2, CNNAutoencoderV2
-from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder
+from Framework.models.autoencoder_cnn import CNNAutoencoderV2
+from Framework.models.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.models.AE_CNN_v2 import CNNAEV2, CNNAutoencoderV2
+from Framework.models.autoencoder_LSTM import LSTMAutoencoder
 from Framework.metrics.metrics import RMSELoss
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
