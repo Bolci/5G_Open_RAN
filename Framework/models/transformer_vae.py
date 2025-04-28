@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+import torch.nn.functional as F
 
 class PositionalEncoding(nn.Module):
     def __init__(self, embed_dim, max_len=48):
@@ -59,8 +60,9 @@ class TransformerVAE(nn.Module):
         # Encode
         batch, seq_len, features = x.size()
 
-        use_fft = True
+        use_fft = False
         add_temp_dev = False
+        add_first_derivative = False
         if use_fft:
             x_freq = torch.fft.rfft(x, dim=1)  # Outputs complex numbers (you might take magnitude/phase as features)
             x= torch.abs(x_freq)
@@ -68,6 +70,10 @@ class TransformerVAE(nn.Module):
         if add_temp_dev:
             temporal_std = x.std(dim=1, keepdim=True)  # (B, 1, F)
             x = torch.cat([x, temporal_std.expand(-1, 48, -1)], dim=2)  # (B, 48, 73)
+        if add_first_derivative:
+            delta = x[:, 1:, :] - x[:, :-1, :]  # (B, 47, 72)
+            delta = F.pad(delta, (0, 0, 1, 0))  # pad first time step → (B, 48, 72)
+            x = torch.cat([x, delta], dim=2)  # (B, 48, 144)
 
         x = self.embedding(x)
         x = self.positional_encoding(x)  # Add positional encoding
@@ -91,6 +97,7 @@ class TransformerVAE(nn.Module):
         if use_fft:
             decoded = torch.fft.irfft(decoded, n=seq_len, dim=1)
 
-        if add_temp_dev:
+        if add_temp_dev or add_first_derivative:
             decoded = decoded[:, :, :features]
+
         return decoded, mu, log_var
