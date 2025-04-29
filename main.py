@@ -6,14 +6,14 @@ from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
 from Framework.metrics.metrics import RMSELoss, VAELoss, unified_loss_fn, MSEwithVarianceLoss
-from Framework.Model_bank.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
-from Framework.Model_bank.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
-from Framework.Model_bank.AE_CNN_v2 import CNNAEV2
-from Framework.Model_bank.transformer_ae import TransformerAutoencoder
-from Framework.Model_bank.transformer_vae import TransformerVAE
-from Framework.Model_bank.autoencoder_cnn1d import Autoencoder1D
-from Framework.Model_bank.autoencoder_rnn import RNNAutoencoder
-from Framework.Model_bank.anomaly_transformer import AnomalyTransformer
+from Framework.models.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
+from Framework.models.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
+from Framework.models.AE_CNN_v2 import CNNAEV2
+from Framework.models.transformer_ae import TransformerAutoencoder
+from Framework.models.transformer_vae import TransformerVAE
+from Framework.models.autoencoder_cnn1d import Autoencoder1D
+from Framework.models.autoencoder_rnn import RNNAutoencoder
+from Framework.models.anomaly_transformer import AnomalyTransformer
 from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
