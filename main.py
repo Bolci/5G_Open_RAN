@@ -227,7 +227,6 @@ def main(path, args):
         metrics_buffer.append(metrics)
         if wandb.run is not None:
             for tester_label, single_score_type_value in test_scores.items():
-                print({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
                 wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
     # get decision lines
     decision_lines= []
