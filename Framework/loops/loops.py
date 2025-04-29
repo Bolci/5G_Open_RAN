@@ -139,9 +139,9 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
 
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
     classification_score_0 = float(counter_var_0)/float(no_samples)
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
+    precision = precision_score(true_labels, predicted_labels, zero_division=0)
+    recall = recall_score(true_labels, predicted_labels, zero_division=0)
+    f1 = f1_score(true_labels, predicted_labels, zero_division=0)
     classification_score_0 = f1
     return classification_score_0, predicted_results, (precision, recall, f1)
 
@@ -175,9 +175,9 @@ def test_loop_general(dataloader_test,
             predicted_results.append(([copy(y.item()), copy(test_loss)]))
 
     classification_score = correct_classification_counter/no_samples
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
+    precision = precision_score(true_labels, predicted_labels, zero_division=0)
+    recall = recall_score(true_labels, predicted_labels, zero_division=0)
+    f1 = f1_score(true_labels, predicted_labels, zero_division=0)
 
     classification_score = f1
     return classification_score, predicted_results, (precision, recall, f1)

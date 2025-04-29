@@ -112,7 +112,7 @@ def main(path, args):
     '''
     # model = CNNAutoencoder(48)
     # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    model = TransformerVAE(input_dim=62*2, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+    model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
                                    dropout=args.dropout)
     # options = [64, 32, 16, 8, 4]
     # hidden_dims = options[:args.num_layers]
