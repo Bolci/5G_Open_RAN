@@ -230,7 +230,6 @@ def main(path, args):
         metrics_buffer.append(metrics)
         if wandb.run is not None:
             for tester_label, single_score_type_value in test_scores.items():
-                print({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
                 wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
     # get decision lines
     decision_lines= []
@@ -257,13 +256,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=70, help="Number of epochs"
+        "--epochs", type=int, default=100, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.0096, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -284,13 +283,13 @@ if __name__ == "__main__":
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=20, help="Embedding dimension"
+        "--embed_dim", type=int, default=40, help="Embedding dimension"
     )
     parser.add_argument(
         "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=4, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=1, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
