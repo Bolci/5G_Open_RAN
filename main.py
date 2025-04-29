@@ -229,9 +229,9 @@ def main(path, args):
         performance.append(test_scores)
         metrics_buffer.append(metrics)
         if wandb.run is not None:
-            for tester_label, single_scores in test_scores.items():
-                for single_scores_type_label, single_score_type_value in test_scores.items():
-                    wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
+            for tester_label, single_score_type_value in test_scores.items():
+                print({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
+                wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
     # get decision lines
     decision_lines= []
     for single_tester_name, single_tester in tester.tester_buffer.items():
