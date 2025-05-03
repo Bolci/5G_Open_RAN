@@ -90,9 +90,9 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(valid_predictions, min_bin, max_bin)
 
     fig, ax = plt.subplots(2,no_datasets_test+1, figsize=(5*(no_datasets_test+1), 10))
-    ax[0, 0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='r',
+    ax[0, 0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
               label='Normalized Histogram valid class 0')
-    ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='b',
+    ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='r',
               label='Normalized Histogram valid class 1')
 
 
@@ -126,9 +126,9 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     subfigs = []
     for id_dataset, dataset_score in enumerate(test_predictions):
         class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
-        ax[0, id_dataset+1].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='r',
+        ax[0, id_dataset+1].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
               label='Normalized Histogram valid class 0')
-        ax[0, id_dataset+1].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='b',
+        ax[0, id_dataset+1].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='r',
               label='Normalized Histogram valid class 1')
 
         # add decision line
@@ -184,10 +184,10 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
         fig2, ax2 = plt.subplots(2, 1, figsize=(5 , 10))
         class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
         ax2[0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0],
-                                  alpha=0.5, color='r',
+                                  alpha=0.5, color='b',
                                   label='Normalized Histogram valid class 0')
         ax2[0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0],
-                                  alpha=0.5, color='b',
+                                  alpha=0.5, color='r',
                                   label='Normalized Histogram valid class 1')
 
         # add decision line
