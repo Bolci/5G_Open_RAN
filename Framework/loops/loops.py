@@ -38,6 +38,7 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
         X_ = X.to(device)
         pred = model(X_)
         loss = loss_fn(pred, X_)
+        loss = loss.mean()  # Ensure loss is a scalar
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
@@ -80,73 +81,23 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
 
     with torch.no_grad():
         for X, y in dataloader:
-            X_ = X.to(device)
-            pred = model(X_)
-            test_loss = loss_fn(pred, X_).item()
+            X = X.to(device)
+            pred = model(X)
+            test_loss = loss_fn(pred, X) # return per sample loss
+            test_loss = test_loss.mean(dim=(1,2))  #
             test_losses_score.append(copy(test_loss))
 
             if not is_train:
-                test_losses_to_print.append([copy(y.item()), copy(test_loss)])
+                test_losses_to_print.append(torch.vstack([y, copy(test_loss)]))
 
-    test_loss_mean = np.mean(np.asarray(test_losses_score))
+    test_losses_to_print = torch.concatenate(test_losses_to_print, dim=0).cpu().numpy() if test_losses_to_print else []
+    test_losses_score = torch.concatenate(test_losses_score, dim=0)
+    test_loss_mean = torch.mean(test_losses_score).item()
+    test_losses_score = test_losses_score.cpu().numpy()
     print(f"Avg loss: {test_loss_mean:>8f} \n")
-
     return test_loss_mean, test_losses_to_print, test_losses_score
 
-def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
-    """
-    Tests the model.
-
-    Parameters
-    ----------
-    dataloader_test : DataLoader
-        The DataLoader for the test data.
-    model : nn.Module
-        The model to be tested.
-    loss_fn : Callable
-        The loss function.
-    threshold : int
-        The threshold for classification.
-    device : str, optional
-        The device to use for testing (default is "cuda").
-
-    Returns
-    -------
-    tuple
-        The classification score and a list of predicted results.
-    """
-    predicted_results = []
-    true_labels = []
-    predicted_labels = []
-    no_samples = len(dataloader_test)
-    counter_var_0 = 0
-
-    with torch.no_grad():
-        for X, y in dataloader_test:
-            if not (len(X.shape) == 3):
-                X = X.unsqueeze(dim=0)
-
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
-
-            predicted_label = 1 if test_loss > threshold else 0
-            predicted_labels.append(predicted_label)
-            true_labels.append(y.item())
-
-            if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
-                counter_var_0 +=1
-
-
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
-    classification_score_0 = float(counter_var_0)/float(no_samples)
-    precision = precision_score(true_labels, predicted_labels, zero_division=0)
-    recall = recall_score(true_labels, predicted_labels, zero_division=0)
-    f1 = f1_score(true_labels, predicted_labels, zero_division=0)
-    classification_score_0 = f1
-    return classification_score_0, predicted_results, (precision, recall, f1)
-
-
-def test_loop_general(dataloader_test,
+def test_loop(dataloader_test,
               model: nn.Module,
               loss_fn: Callable,
               predict_class: Callable,
@@ -163,21 +114,23 @@ def test_loop_general(dataloader_test,
                 X = X.unsqueeze(dim=0)
 
             pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
-
+            test_loss = loss_fn(pred, X) # return per sample loss
+            test_loss = test_loss.mean(dim=(1,2))
             predicted_label = predict_class(test_loss)
             predicted_labels.append(predicted_label)
-            true_labels.append(y.item())
+            true_labels.append(y)
 
-            if y == predict_class(test_loss):
-                correct_classification_counter += 1
+            # if y == predict_class(test_loss):
+            #     correct_classification_counter += 1
 
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
-
-    classification_score = correct_classification_counter/no_samples
+            predicted_results.append(torch.vstack([copy(y), copy(test_loss)]))
+    true_labels = torch.concatenate(true_labels, dim=0).cpu().numpy()
+    predicted_labels = torch.concatenate(predicted_labels, dim=0).cpu().numpy()
+    # classification_score = correct_classification_counter/no_samples
     precision = precision_score(true_labels, predicted_labels, zero_division=0)
     recall = recall_score(true_labels, predicted_labels, zero_division=0)
     f1 = f1_score(true_labels, predicted_labels, zero_division=0)
 
     classification_score = f1
+    predicted_results = torch.concatenate(predicted_results, dim=0).cpu().numpy()
     return classification_score, predicted_results, (precision, recall, f1)

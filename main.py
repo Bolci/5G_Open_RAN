@@ -5,7 +5,7 @@ from Framework.utils.utils import load_json_as_dict, save_txt
 from Framework.preprocessors.data_preprocessor import DataPreprocessor
 from Framework.preprocessors.data_path_worker import get_all_paths
 from Framework.preprocessors.data_utils import get_data_loaders, get_datasets
-from Framework.metrics.metrics import RMSELoss, VAELoss
+from Framework.metrics.metrics import RMSELoss, VAELoss,SSIMLoss
 from Framework.models.autoencoder_cnn import CNNAutoencoder, CNNAutoencoderV2, CNNAutoencoderDropout
 from Framework.models.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCustom
 from Framework.models.AE_CNN_v2 import CNNAEV2
@@ -13,7 +13,7 @@ from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.models.transformer_vae import TransformerVAE
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
-from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
+from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.postprocessor_utils import get_print_message
@@ -23,11 +23,13 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim.lr_scheduler as lr_scheduler
+from torch import nn
 import wandb
 import datetime
 
-def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
-    dataloaders = get_data_loaders(datasets, batch_size)
+
+def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
+    # dataloaders = get_data_loaders(datasets, batch_size)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
 
@@ -67,7 +69,7 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
             wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
         train_loss_mean_save.append(train_loss)
         valid_loss_mean_save.append(valid_loss_mean)
-        valid_loss_all_save.append(valid_loss_all)
+        valid_loss_all_save.append(np.expand_dims(valid_loss_all, axis=0))
 
     model.eval()
     _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
@@ -76,8 +78,8 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                                  device=device,
                                                  is_train=True)
 
-
-    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score
+    valid_loss_all_save = np.vstack(valid_loss_all_save).tolist()
+    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score.tolist()
 
 
 def main(path, args):
@@ -100,7 +102,7 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-
+    dataloaders = get_data_loaders(datasets,args.batch_size)
     '''
     model = LSTMAutoencoderCustom(input_dimensions=72,
                                   expansion_dim=args.expansion_dim,
@@ -111,19 +113,34 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
-                                   dropout=args.dropout)
+    model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+    #                                dropout=args.dropout)
     # options = [64, 32, 16, 8, 4]
     # hidden_dims = options[:args.num_layers]
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     # criterion = RMSELoss()
-    criterion = VAELoss()
+    criterion = SSIMLoss()
+    class CombLoss(nn.Module):
+        def __init__(self, lambda_1=0.5, lambda_2=0.5):
+            super().__init__()
+            self.lambda_1 = lambda_1
+            self.lambda_2 = lambda_2
+            self.rec_loss = RMSELoss()
+            self.sim_loss = SSIMLoss()
+
+        def forward(self, output, target):
+            rmse_loss = self.rec_loss(output, target)
+            ssim_loss = self.sim_loss(output, target)
+            return self.lambda_1 * rmse_loss + self.lambda_2 * ssim_loss
+    # criterion = CombLoss(lambda_1=0.3, lambda_2=0.7)
+    criterion = nn.MSELoss(reduction='none')
+    # criterion = VAELoss()
 
     train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
-        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
+        train_with_hp_setup(dataloaders, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
 
     valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
 
@@ -194,8 +211,8 @@ def main(path, args):
     torch.save(model.state_dict(), model_path)
 
     #valid_graph
-    sv_path = os.path.join(saving_path, 'valid_graph.png')
-    plot_data_by_labels(valid_loss_all_save, sv_path)
+    # sv_path = os.path.join(saving_path, 'valid_graph.png')
+    # plot_data_by_labels(valid_loss_all_save, sv_path)
 
     #testing loop
     tester = Tester(result_folder_path=path['Saving_path'],
@@ -215,8 +232,8 @@ def main(path, args):
     performance = []
     metrics_buffer = []
 
-    for id_dat, single_test_dataset in enumerate(datasets['Test']):
-        testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
+    for id_dat, single_test_dataset in enumerate(dataloaders['Test']):
+        testing_loop = lambda class_metric: test_loop(single_test_dataset, model, criterion, class_metric, device=device)
         test_scores, predictions, metrics = tester.test_data(testing_loop=testing_loop)
         print("=============================")
         print(f'Test scores, dataset_id {id_dat}')
@@ -245,15 +262,13 @@ def main(path, args):
         wandb.finish()
 
 
-
-
 if __name__ == "__main__":
     #wandb.init(project="Anomaly_detection", config={"epochs": 10, "batch_size": 32})
     paths_config = load_json_as_dict('./local_data_path_no_valid.json')
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=3, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
@@ -280,13 +295,13 @@ if __name__ == "__main__":
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=20, help="Embedding dimension"
+        "--embed_dim", type=int, default=10, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=2, help="Multihead attention heads"
+        "--num_heads", type=int, default=1, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=4, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=2, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
