@@ -40,9 +40,12 @@ class Tester:
                  valid_score_over_epoch_file_name: str,
                  valid_score_over_epoch_per_batch_file_name: str,
                  train_score_final_file_name: str,
-                 tests_to_perform: List[str] = ('interval_estimator_min_max', 'interval_estimator_std',
-                                                'interval_estimator_mad', 'interval_estimator_pdf',
-                                                'interval_estimator_pdf_adaptive')):
+                 tests_to_perform: List[str] = ('interval_estimator_min_max',
+                                                'interval_estimator_std',
+                                                #'interval_estimator_mad',
+                                                # 'interval_estimator_pdf',
+                                                #'interval_estimator_pdf_adaptive'
+                                                )):
 
         self.result_folder_path = result_folder_path
         self.attempt_name = attempt_name

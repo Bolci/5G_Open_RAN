@@ -40,39 +40,34 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
         X_ = X.to(device)
         if model.model_name == "anomaly_transformer":
             pred, series, prior, _ = model(X_)
-            # calculate Association discrepancy
             series_loss = 0.0
             prior_loss = 0.0
+            recon_loss = loss_fn(pred, X_)
             for u in range(len(prior)):
-                series_loss += (torch.mean(my_kl_loss(series[u], (
-                        prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                               model.win_size)).detach())) + torch.mean(
-                    my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                       model.win_size)).detach(),
-                               series[u])))
-                prior_loss += (torch.mean(my_kl_loss(
-                    (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                            model.win_size)),
-                    series[u].detach())) + torch.mean(
-                    my_kl_loss(series[u].detach(), (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   model.win_size)))))
-            series_loss = series_loss / len(prior)
-            prior_loss = prior_loss / len(prior)
+                norm_prior = prior[u] / torch.sum(prior[u], dim=-1, keepdim=True)
+
+                series_loss += torch.mean(my_kl_loss(series[u], norm_prior.detach()) + my_kl_loss(norm_prior.detach(), series[u]))
+                prior_loss += torch.mean(my_kl_loss(norm_prior, series[u].detach()) + my_kl_loss(series[u].detach(), norm_prior))
+
+            series_loss /= len(prior)
+            prior_loss /= len(prior)
+            koef = 0.5
+            loss1 = recon_loss - koef * series_loss
+            loss2 = recon_loss + koef * prior_loss
+            loss = loss1 + loss2
         else:
             pred = model(X_)
-        loss = loss_fn(pred, X_)
+            loss = loss_fn(pred, X_)
         # Backpropagation
         optimizer.zero_grad()
         if model.model_name == "anomally_transformer":
 
-            loss1 = loss - 0.2 * series_loss
-            loss2 = loss + 0.2 * prior_loss
+            loss1 = loss - koef * series_loss
+            loss2 = loss + koef * prior_loss
             loss1.backward(retain_graph=True)
             loss2.backward()
             loss = loss1 + loss2
         else:
-
             loss.backward()
         optimizer.step()
 
@@ -189,23 +184,47 @@ def test_loop_general(dataloader_test,
     predicted_labels = []
     correct_classification_counter = 0
     no_samples = len(dataloader_test)
-
+    model.output_attention = True
     with torch.no_grad():
         for X, y in dataloader_test:
             if not (len(X.shape) == 3):
                 X = X.unsqueeze(dim=0)
+            X_ = X.to(device)
+            # ----
+            pred, series, prior, _ = model(X_)
 
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
+            # Normalized prior
+            normalized_prior = []
+            for u in range(len(prior)):
+                norm = torch.sum(prior[u], dim=-1, keepdim=True)
+                norm_prior = prior[u] / norm.repeat(1, 1, 1, model.win_size)
+                normalized_prior.append(norm_prior)
 
-            predicted_label = predict_class(test_loss)
+            # Series-Prior KL losses
+            series_loss = 0.0
+            prior_loss = 0.0
+            koef = 0.5
+            for u in range(len(prior)):
+                s = series[u]
+                p = normalized_prior[u]
+                series_loss += torch.mean(my_kl_loss(s, p.detach()) + my_kl_loss(p.detach(), s))
+                prior_loss += torch.mean(my_kl_loss(p, s.detach()) + my_kl_loss(s.detach(), p))
+            series_loss /= len(prior)
+            prior_loss /= len(prior)
+
+            # Final loss
+            recon_loss = loss_fn(pred, X_)  # e.g., RMSE or MSE
+            total_loss = recon_loss + koef * prior_loss - koef * series_loss
+            total_loss = total_loss.item()
+            # ----
+            predicted_label = predict_class(total_loss)
             predicted_labels.append(predicted_label)
             true_labels.append(y.item())
 
-            if y == predict_class(test_loss):
+            if y == predict_class(total_loss):
                 correct_classification_counter += 1
 
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
+            predicted_results.append(([copy(y.item()), copy(total_loss)]))
 
     classification_score = correct_classification_counter/no_samples
     precision = precision_score(true_labels, predicted_labels)

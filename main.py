@@ -256,7 +256,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=100, help="Number of epochs"
+        "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
