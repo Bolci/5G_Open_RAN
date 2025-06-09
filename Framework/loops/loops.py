@@ -155,60 +155,60 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     # val_losses_score - np.ndarray - array of shape [BATCH, ] with per-sample losses
     return val_loss_mean, val_losses_to_print, val_losses_score
 
-def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
-    """
-    Tests the model.
+# def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
+#     """
+#     Tests the model.
+#
+#     Parameters
+#     ----------
+#     dataloader_test : DataLoader
+#         The DataLoader for the test data.
+#     model : nn.Module
+#         The model to be tested.
+#     loss_fn : Callable
+#         The loss function.
+#     threshold : int
+#         The threshold for classification.
+#     device : str, optional
+#         The device to use for testing (default is "cuda").
+#
+#     Returns
+#     -------
+#     tuple
+#         The classification score and a list of predicted results.
+#     """
+#     predicted_results = []
+#     true_labels = []
+#     predicted_labels = []
+#     no_samples = len(dataloader_test)
+#     counter_var_0 = 0
+#
+#     with torch.no_grad():
+#         for X, y in dataloader_test:
+#             if not (len(X.shape) == 3):
+#                 X = X.unsqueeze(dim=0)
+#
+#             pred = model(X.to(device))
+#             test_loss = loss_fn(pred, X).item()
+#
+#             predicted_label = 1 if test_loss > threshold else 0
+#             predicted_labels.append(predicted_label)
+#             true_labels.append(y.item())
+#
+#             if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
+#                 counter_var_0 +=1
+#
+#
+#             predicted_results.append(([copy(y.item()), copy(test_loss)]))
+#     classification_score_0 = float(counter_var_0)/float(no_samples)
+#     precision = precision_score(true_labels, predicted_labels)
+#     recall = recall_score(true_labels, predicted_labels)
+#     f1 = f1_score(true_labels, predicted_labels)
+#     classification_score_0 = f1
+#     return classification_score_0, predicted_results, (precision, recall, f1)
 
-    Parameters
-    ----------
-    dataloader_test : DataLoader
-        The DataLoader for the test data.
-    model : nn.Module
-        The model to be tested.
-    loss_fn : Callable
-        The loss function.
-    threshold : int
-        The threshold for classification.
-    device : str, optional
-        The device to use for testing (default is "cuda").
 
-    Returns
-    -------
-    tuple
-        The classification score and a list of predicted results.
-    """
-    predicted_results = []
-    true_labels = []
-    predicted_labels = []
-    no_samples = len(dataloader_test)
-    counter_var_0 = 0
-
-    with torch.no_grad():
-        for X, y in dataloader_test:
-            if not (len(X.shape) == 3):
-                X = X.unsqueeze(dim=0)
-
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
-
-            predicted_label = 1 if test_loss > threshold else 0
-            predicted_labels.append(predicted_label)
-            true_labels.append(y.item())
-
-            if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
-                counter_var_0 +=1
-
-
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
-    classification_score_0 = float(counter_var_0)/float(no_samples)
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
-    classification_score_0 = f1
-    return classification_score_0, predicted_results, (precision, recall, f1)
-
-
-def test_loop_general(dataloader_test,
+def test_loop(dataloader_test,
               model: nn.Module,
               loss_fn: Callable,
               predict_class: Callable,
