@@ -42,9 +42,9 @@ class Tester:
                  train_score_final_file_name: str,
                  tests_to_perform: List[str] = ('interval_estimator_min_max',
                                                 'interval_estimator_std',
-                                                #'interval_estimator_mad',
+                                                'interval_estimator_mad',
                                                 # 'interval_estimator_pdf',
-                                                #'interval_estimator_pdf_adaptive'
+                                                # 'interval_estimator_pdf_adaptive'
                                                 )):
 
         self.result_folder_path = result_folder_path
@@ -107,7 +107,7 @@ class Tester:
                                                                            save_figs=save_figs,
                                                                            figs_label=figs_label)
             testing_scores[single_tester_name] = copy(classification_score_on_test)
-            predictions_buffer[single_tester_name] = predictions
+            predictions_buffer[single_tester_name] = predictions.T
             metrics_buffer[single_tester_name] = metrics
 
         return testing_scores, predictions_buffer, metrics_buffer

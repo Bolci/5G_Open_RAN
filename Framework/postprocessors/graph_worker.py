@@ -3,7 +3,7 @@ import numpy as np
 from copy import copy
 
 def get_single_dist(single_scores):
-    single_scores = np.asarray(single_scores)
+    # single_scores = np.asarray(single_scores)
     indices_1 = np.where(single_scores[:, 0] == 1.)
     indices_0 = np.where(single_scores[:, 0] == 0.)
 
@@ -35,8 +35,8 @@ def get_bins_and_counts(prediction_pred_class, min_val, max_val, no_bins=20):
     return bin_width, counts_nornalized, bins
 
 
-def get_norm_scores_per_dataset(predctions, min_val = None, max_val = None, bins = 40):
-    class_1_score, class_0_score = get_single_dist(predctions)
+def get_norm_scores_per_dataset(predictions, min_val = None, max_val = None, bins = 40):
+    class_1_score, class_0_score = get_single_dist(predictions)
 
     if max_val is None:
         max_val = np.max(np.concatenate((class_1_score, class_0_score), axis=0))
@@ -82,7 +82,12 @@ def get_global_min_max(valid_predictions, test_predictions):
 
 
 def get_distribution_plot(valid_predictions, test_predictions, performance, metrics_buffer, decision_lines, plot_names):
-    get_global_min_max(valid_predictions, test_predictions)
+    """
+    Generates a distribution plot for the validation and test predictions.
+    Args:
+
+
+    """
     no_datasets_test = len(test_predictions)
 
     min_bin, max_bin = get_global_min_max(valid_predictions, test_predictions)
@@ -119,7 +124,6 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     ax[0, 0].set_ylabel('Density')
     ax[0, 0].legend()
     ax[0, 0].set_ylim([0,0.5])
-
     ax[0, 0].grid(True)
 
 
@@ -181,6 +185,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
         ax[1, id_dataset+1].axis('off')
         ax[1, 0].axis('off')
 
+        # ////////////////////////////////////////////////////////////////////////////////////////////////////////////
         fig2, ax2 = plt.subplots(2, 1, figsize=(5 , 10))
         class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
         ax2[0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0],

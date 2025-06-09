@@ -24,26 +24,26 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch.optim.lr_scheduler as lr_scheduler
+from torch import nn
 import wandb
 import datetime
 
-def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, device, criterion):
-    dataloaders = get_data_loaders(datasets, batch_size)
+
+def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
+
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
     scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
 
     model.to(device)
     criterion.to(device)
 
-    #do one validation loop to ini everything
+    # warm-up
     _, _, _ = valid_loop(dataloaders['Valid'][0],
                       model,
                       criterion,
                       device=device)
 
-    train_loss_mean_save = []
-    valid_loss_mean_save = []
-    valid_loss_all_save = []
+    train_losses, valid_losses, valid_all_losses = [], [], []
     for epoch in range(no_epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
 
@@ -54,31 +54,36 @@ def train_with_hp_setup(datasets, model, batch_size, learning_rate, no_epochs, d
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        # scheduler.step()
+        # scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
-        print("Epoch %d: lr %.8f -> %.8f" % (epoch, before_lr, after_lr))
+        print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
 
         model.eval()
-        valid_loss_mean, valid_loss_all, _ = valid_loop(dataloaders['Valid'][0],
+        val_loss, val_all, _ = valid_loop(dataloaders['Valid'][0],
                                                         model,
                                                         criterion,
                                                         device=device)
 
         if wandb.run is not None:
-            wandb.log({"train_loss": train_loss, "val_loss": valid_loss_mean, "lr": before_lr, "epoch": epoch})
-        train_loss_mean_save.append(train_loss)
-        valid_loss_mean_save.append(valid_loss_mean)
-        valid_loss_all_save.append(valid_loss_all)
+            wandb.log({"train_loss": train_loss, "val_loss": val_loss, "lr": before_lr, "epoch": epoch})
+
+        train_losses.append(train_loss)
+        valid_losses.append(val_loss)
+        valid_all_losses.append(np.expand_dims(val_all, axis=0))
 
     model.eval()
-    _, _, train_dist_score = valid_loop(dataloaders['Train'][0],
+    _, _, train_scores = valid_loop(dataloaders['Train'][0],
                                                  model,
                                                  criterion,
                                                  device=device,
                                                  is_train=True)
 
-
-    return train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score
+    return (
+        np.array(train_losses),
+        np.array(valid_losses),
+        np.vstack(valid_all_losses),
+        np.array(train_scores),
+    )
 
 
 def main(path, args):
@@ -101,7 +106,7 @@ def main(path, args):
 
     #prepare datasets and data_loaders
     datasets = get_datasets(paths_for_datasets)
-
+    dataloaders = get_data_loaders(datasets,args.batch_size)
     '''
     model = LSTMAutoencoderCustom(input_dimensions=72,
                                   expansion_dim=args.expansion_dim,
@@ -112,8 +117,8 @@ def main(path, args):
                                   device=device)
     '''
     # model = CNNAutoencoder(48)
-    # model = TransformerAutoencoder(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    # model = TransformerVAE(embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+    # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TransformerVAE(input_dim=62*2, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
     #                                dropout=args.dropout)
     # options = [64, 32, 16, 8, 4]
     # hidden_dims = options[:args.num_layers]
@@ -121,14 +126,14 @@ def main(path, args):
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
-    criterion = RMSELoss()
+    # criterion = RMSELoss()
+    criterion = nn.MSELoss(reduction='none')
     # criterion = MSEwithVarianceLoss()
     # criterion = VAELoss()
 
-    train_loss_mean_save, valid_loss_mean_save, valid_loss_all_save, train_dist_score = (
-        train_with_hp_setup(datasets, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
-
-    valid_metrics =  mean_labels_over_epochs(valid_loss_all_save)
+    train_losses, valid_losses, valid_loss_all, train_score = (
+        train_with_hp_setup(dataloaders, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
+    valid_metrics =  mean_labels_over_epochs(valid_loss_all)
 
     #preparing saving paths
     now = datetime.datetime.now()
@@ -143,35 +148,34 @@ def main(path, args):
         os.makedirs(saving_path)
 
     #file_names
-    train_over_epoch = 'train_over_epoch.txt'
-    valid_over_epoch = 'valid_over_epoch.txt'
-    valid_over_epoch_over_batch_with_labels = 'valid_epochs_labels.txt'
-    train_final_score_per_batch = 'train_final_per_batch.txt'
+    train_over_epoch = 'train_over_epoch.npy'
+    valid_over_epoch = 'valid_over_epoch.npy'
+    valid_over_epoch_over_batch_with_labels = 'valid_epochs_labels.npy'
+    train_final_score_per_batch = 'train_final_per_batch.npy'
 
     #saving metrics
     path_training_over_epochs = os.path.join(saving_path, train_over_epoch)
-    save_txt(path_training_over_epochs, train_loss_mean_save)
+    np.save(path_training_over_epochs, train_losses)
     path_valid_over_epochs = os.path.join(saving_path, valid_over_epoch)
-    save_txt(path_valid_over_epochs, valid_loss_mean_save)
+    np.save(path_valid_over_epochs, valid_losses)
     path_valid_epochs_labels = os.path.join(saving_path, valid_over_epoch_over_batch_with_labels)
-    save_txt(path_valid_epochs_labels, valid_loss_all_save)
+    np.save(path_valid_epochs_labels, valid_loss_all)
     path_train_final_per_batch = os.path.join(saving_path, train_final_score_per_batch)
-    save_txt(path_train_final_per_batch, train_dist_score)
+    np.save(path_train_final_per_batch, train_score)
 
+    # #saving loss over epochs
+    # plt.figure()
+    # plt.plot(train_losses, label='Train')
+    # plt.plot(valid_losses, label='Valid')
+    # fig_path = os.path.join(saving_path, 'fig_1_train_valid.png')
+    # plt.xlabel("epochs")
+    # plt.ylabel("RMSE")
+    # plt.grid()
+    # plt.legend()
+    # plt.savefig(fig_path)
 
-    #saving loss over epochs
     plt.figure()
-    plt.plot(train_loss_mean_save, label='Train')
-    plt.plot(valid_loss_mean_save, label='Valid')
-    fig_path = os.path.join(saving_path, 'fig_1_train_valid.png')
-    plt.xlabel("epochs")
-    plt.ylabel("RMSE")
-    plt.grid()
-    plt.legend()
-    plt.savefig(fig_path)
-
-    plt.figure()
-    plt.plot(train_loss_mean_save, label='Train')
+    plt.plot(train_losses, label='Train')
     plt.plot(valid_metrics['Class_0'], label='Valid_class_0')
     plt.plot(valid_metrics['Class_1'], label='Valid_class_1')
     fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels.png')
@@ -181,24 +185,9 @@ def main(path, args):
     plt.legend()
     plt.savefig(fig_path)
 
-    plt.figure()
-    plt.plot(np.arange(len(train_loss_mean_save))[10:], train_loss_mean_save[10:], label='Train')
-    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_0'][10:], label='Valid_class_0')
-    plt.plot(np.arange(len(train_loss_mean_save))[10:], valid_metrics['Class_1'][10:], label='Valid_class_1')
-    fig_path = os.path.join(saving_path, 'fig_1_train_valid_labels_zoomed.png')
-    plt.xlabel("epochs")
-    plt.ylabel("RMSE")
-    plt.grid()
-    plt.legend()
-    plt.savefig(fig_path)
-
     #save model
     model_path = os.path.join(saving_path, 'model.pt')
     torch.save(model.state_dict(), model_path)
-
-    #valid_graph
-    sv_path = os.path.join(saving_path, 'valid_graph.png')
-    plot_data_by_labels(valid_loss_all_save, sv_path)
 
     #testing loop
     tester = Tester(result_folder_path=path['Saving_path'],
@@ -217,9 +206,8 @@ def main(path, args):
     predictions_buffer = []
     performance = []
     metrics_buffer = []
-
-    for id_dat, single_test_dataset in enumerate(datasets['Test']):
-        testing_loop = lambda class_metric: test_loop_general(single_test_dataset, model, criterion, class_metric, device=device)
+    for id_dat, single_test_dataset in enumerate(dataloaders['Test']):
+        testing_loop = lambda class_metric: test_loop(single_test_dataset, model, criterion, class_metric, device=device)
         test_scores, predictions, metrics = tester.test_data(testing_loop=testing_loop)
         print("=============================")
         print(f'Test scores, dataset_id {id_dat}')
@@ -231,13 +219,14 @@ def main(path, args):
         if wandb.run is not None:
             for tester_label, single_score_type_value in test_scores.items():
                 wandb.log({f"tester_{tester_label}_type={paths_for_datasets['Test'][id_dat].split('/')[-1]}": single_score_type_value})
+
     # get decision lines
     decision_lines= []
     for single_tester_name, single_tester in tester.tester_buffer.items():
         decision_lines.append((single_tester_name, single_tester.get_decision_lines()))
 
     plot_names = path["Test_folders"]
-    fig_distribution, subfigures = get_distribution_plot(valid_loss_all_save[-1], predictions_buffer, performance, metrics_buffer, decision_lines, plot_names)
+    fig_distribution, subfigures = get_distribution_plot(valid_loss_all[-1,:,:], predictions_buffer, performance, metrics_buffer, decision_lines, plot_names)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
@@ -246,8 +235,6 @@ def main(path, args):
         fig.savefig(graph_valid_test_distribution_separated)
     if wandb.run is not None:
         wandb.finish()
-
-
 
 
 if __name__ == "__main__":
@@ -283,13 +270,13 @@ if __name__ == "__main__":
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=40, help="Embedding dimension"
+        "--embed_dim", type=int, default=20, help="Embedding dimension"
     )
     parser.add_argument(
         "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=1, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=4, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
@@ -306,7 +293,7 @@ if __name__ == "__main__":
             entity="OPEN_5G_RAN_team",
             #name="all_50_complex",
             config=vars(parser.parse_args()),
-            mode="online",
+            mode="online"
             # tags=[f"VAE_positional_enc"]
         )
 

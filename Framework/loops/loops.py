@@ -102,11 +102,13 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
 
     Returns
     -------
-    tuple
-        The mean validation loss, a list of losses to print, and a list of score losses.
+        A tuple containing:
+        - float: The average validation loss.
+        - np.ndarray: Losses to print (if not during training).
+        - np.ndarray: Per-sample validation losses.
     """
-    test_losses_to_print = []
-    test_losses_score = []
+    val_losses_to_print = []
+    val_losses_score = []
     model.output_attention = True
     with torch.no_grad():
         for X, y in dataloader:
@@ -135,16 +137,23 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
             # Final loss
             recon_loss = loss_fn(pred, X_)  # e.g., RMSE or MSE
             total_loss = recon_loss + koef * prior_loss - koef * series_loss
-            test_loss = total_loss.item()
-            test_losses_score.append(copy(test_loss))
+            val_loss = total_loss.item()
+            val_losses_score.append(copy(val_loss))
 
             if not is_train:
-                test_losses_to_print.append([copy(y.item()), copy(test_loss)])
+                val_losses_to_print.append([copy(y.item()), copy(val_loss)])
 
-    test_loss_mean = np.mean(np.asarray(test_losses_score))
-    print(f"Avg loss: {test_loss_mean:>8f} \n")
+    val_losses_to_print = torch.concatenate(val_losses_to_print, dim=1).cpu().numpy().T if val_losses_to_print else []
+    val_losses_score = torch.concatenate(val_losses_score, dim=0)
+    val_loss_mean = torch.mean(val_losses_score).item()
+    val_losses_score = val_losses_score.cpu().numpy()
+    print(f"Avg loss: {val_loss_mean:>8f} \n")
 
-    return test_loss_mean, test_losses_to_print, test_losses_score
+
+    # val_loss_mean - FLOAT - average loss over all samples in the validation set
+    # val_losses_to_print - np.ndarray - array of shape [BATCH, 2] with first column being labels and second column being losses
+    # val_losses_score - np.ndarray - array of shape [BATCH, ] with per-sample losses
+    return val_loss_mean, val_losses_to_print, val_losses_score
 
 def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
     """
@@ -173,7 +182,7 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
     predicted_labels = []
     no_samples = len(dataloader_test)
     counter_var_0 = 0
-    model.output_attention = False
+
     with torch.no_grad():
         for X, y in dataloader_test:
             if not (len(X.shape) == 3):

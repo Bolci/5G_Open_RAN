@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
+from pytorch_msssim import ssim
 class RMSELoss(nn.Module):
     """
     A custom loss function that calculates the Root Mean Squared Error (RMSE).
@@ -24,7 +24,7 @@ class RMSELoss(nn.Module):
             Arbitrary keyword arguments.
         """
         super().__init__()
-        self.mse = nn.MSELoss(*args, **kwargs)
+        self.mse = nn.MSELoss(reduction='none',*args, **kwargs)
 
     def forward(self, yhat, y):
         """
@@ -44,6 +44,49 @@ class RMSELoss(nn.Module):
         """
         return torch.sqrt(self.mse(yhat, y))
 
+
+class SSIMLoss(nn.Module):
+    """
+    A custom loss function that calculates the Structural Similarity Index (SSIM) loss.
+
+    Methods
+    -------
+    forward(yhat, y)
+        Computes the SSIM loss between the predicted values and the actual values.
+    """
+
+    def __init__(self, *args, **kwargs):
+        """
+        Initializes the SSIMLoss class.
+
+        Parameters
+        ----------
+        *args : tuple
+            Variable length argument list.
+        **kwargs : dict
+            Arbitrary keyword arguments.
+        """
+        super().__init__()
+        self.ssim = ssim
+
+    def forward(self, yhat, y):
+        """
+        Computes the SSIM loss between the predicted values and the actual values.
+
+        Parameters
+        ----------
+        yhat : torch.Tensor
+            The predicted values.
+        y : torch.Tensor
+            The actual values.
+
+        Returns
+        -------
+        torch.Tensor
+            The computed SSIM loss.
+        """
+        data_range = yhat.max() - yhat.min()
+        return 1 - self.ssim(yhat.unsqueeze(1), y.unsqueeze(1), data_range=data_range.item())
 
 class DSVDDLoss(nn.Module):
     def __init__(self):

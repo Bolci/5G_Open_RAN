@@ -60,7 +60,6 @@ def get_data_loaders(Datasets: dict, batch_size):
 
     for dataset_type, dataset in Datasets.items():
         for single_dataset in dataset:
-            bs = batch_size if dataset_type == 'Train' else 1
-            return_datasets[dataset_type].append(DataLoader(single_dataset, batch_size=bs, shuffle=True))
+            return_datasets[dataset_type].append(DataLoader(single_dataset, batch_size=batch_size, shuffle=True))
 
     return return_datasets

@@ -1,5 +1,8 @@
 import numpy as np
 import os
+
+import torch
+
 from Framework.postprocessors.postprocesor_general import PostprocessorGeneral
 import matplotlib.pyplot as plt
 from typing import Tuple, Callable, Any
@@ -30,17 +33,20 @@ class IntervalEstimatorMinMax(PostprocessorGeneral):
     def __init__(self):
         super().__init__()
 
-    def metric_function_interval(self, loss_of_sample_x: float) -> int:
+    def metric_function_interval(self, batch_of_samples: torch.tensor) -> int:
         """
        Evaluates whether the sample is within the defined decision interval. Server as a metric function for the test loop
 
        Args:
-           loss_of_sample_x (float): The score of the sample to evaluate.
+           batch_of_samples (torch.tensor): The score of the sample to evaluate.
 
        Returns:
            int: 0 if the sample is within the interval, 1 otherwise.
        """
-        return 0 if self.measured_decision_line['min'] <= loss_of_sample_x <= self.measured_decision_line['max'] else 1
+        return (
+                (batch_of_samples >= self.measured_decision_line['min']) &
+                (batch_of_samples <= self.measured_decision_line['max'])
+        ).int()
 
     def get_decision_lines(self):
         _min = self.measured_decision_line['min']
@@ -122,12 +128,12 @@ class IntervalEstimatorStd(PostprocessorGeneral):
         self.std_val_threshold = 1
 
     
-    def metric_function_std(self, loss_of_sample_x: float) -> int:
+    def metric_function_std(self, batch_of_samples: float) -> int:
         """
         Evaluates whether the sample is within the defined decision interval based on the standard deviation.
 
         Args:
-            loss_of_sample_x (float): The score of the sample to evaluate.
+            batch_of_samples (torch.tensor): The score of the sample to evaluate.
 
         Returns:
             int: 0 if the sample is within the interval, 1 otherwise.
@@ -135,7 +141,10 @@ class IntervalEstimatorStd(PostprocessorGeneral):
         _min = self.measured_decision_line['mean'] - self.measured_decision_line['std']*self.std_val_threshold
         _max = self.measured_decision_line['mean'] + self.measured_decision_line['std']*self.std_val_threshold
 
-        return 0 if _min <= loss_of_sample_x <= _max else 1
+        return ((batch_of_samples >= _min ) &
+                (batch_of_samples <= _max)
+        ).int()
+
 
     def estimate_decision_lines(self,
                                 use_epochs: int = 5,
@@ -252,12 +261,12 @@ class IntervalEstimatorMAD(PostprocessorGeneral):
         super().__init__()
         self.mad_val_threshold = 1.0
 
-    def metric_function_mad(self, loss_of_sample_x: float) -> int:
+    def metric_function_mad(self, batch_of_samples: float) -> int:
         """
         Evaluates whether the sample is within the defined decision interval based on MAD.
 
         Args:
-            loss_of_sample_x (float): The score of the sample to evaluate.
+            batch_of_samples (torch.tensor): The score of the sample to evaluate.
 
         Returns:
             int: 0 if the sample is within the interval, 1 otherwise.
@@ -266,7 +275,11 @@ class IntervalEstimatorMAD(PostprocessorGeneral):
         mad = self.measured_decision_line['mad']
         _min = median - mad * self.mad_val_threshold
         _max = median + mad * self.mad_val_threshold
-        return 0 if _min <= loss_of_sample_x <= _max else 1
+
+        return ((batch_of_samples >= _min ) &
+                (batch_of_samples <= _max)
+        ).int()
+
 
 
     def get_decision_lines(self):
