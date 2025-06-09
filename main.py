@@ -253,7 +253,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=2, help="Number of epochs"
+        "--epochs", type=int, default=50, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
@@ -286,7 +286,7 @@ if __name__ == "__main__":
         "--num_heads", type=int, default=1, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=4, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
