@@ -73,29 +73,36 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
 
     Returns
     -------
-    tuple
-        The mean validation loss, a list of losses to print, and a list of score losses.
+        A tuple containing:
+        - float: The average validation loss.
+        - np.ndarray: Losses to print (if not during training).
+        - np.ndarray: Per-sample validation losses.
     """
-    test_losses_to_print = []
-    test_losses_score = []
+    val_losses_to_print = []
+    val_losses_score = []
 
     with torch.no_grad():
         for X, y in dataloader:
             X = X.to(device)
             pred = model(X)
-            test_loss = loss_fn(pred, X) # return per sample loss
-            test_loss = test_loss.mean(dim=(1,2))  #
-            test_losses_score.append(copy(test_loss))
+            val_loss = loss_fn(pred, X) # return per sample loss [BATCH, ]
+            val_loss = val_loss.mean(dim=(1,2))  #
+            val_losses_score.append(copy(val_loss))
 
             if not is_train:
-                test_losses_to_print.append(torch.vstack([y, copy(test_loss)]))
+                val_losses_to_print.append(torch.vstack([y, copy(val_loss)]))
 
-    test_losses_to_print = torch.concatenate(test_losses_to_print, dim=0).cpu().numpy() if test_losses_to_print else []
-    test_losses_score = torch.concatenate(test_losses_score, dim=0)
-    test_loss_mean = torch.mean(test_losses_score).item()
-    test_losses_score = test_losses_score.cpu().numpy()
-    print(f"Avg loss: {test_loss_mean:>8f} \n")
-    return test_loss_mean, test_losses_to_print, test_losses_score
+    val_losses_to_print = torch.concatenate(val_losses_to_print, dim=1).cpu().numpy().T if val_losses_to_print else []
+    val_losses_score = torch.concatenate(val_losses_score, dim=0)
+    val_loss_mean = torch.mean(val_losses_score).item()
+    val_losses_score = val_losses_score.cpu().numpy()
+    print(f"Avg loss: {val_loss_mean:>8f} \n")
+
+
+    # val_loss_mean - FLOAT - average loss over all samples in the validation set
+    # val_losses_to_print - np.ndarray - array of shape [BATCH, 2] with first column being labels and second column being losses
+    # val_losses_score - np.ndarray - array of shape [BATCH, ] with per-sample losses
+    return val_loss_mean, val_losses_to_print, val_losses_score
 
 def test_loop(dataloader_test,
               model: nn.Module,

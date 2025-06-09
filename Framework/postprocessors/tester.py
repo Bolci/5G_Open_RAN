@@ -107,7 +107,7 @@ class Tester:
                                                                            save_figs=save_figs,
                                                                            figs_label=figs_label)
             testing_scores[single_tester_name] = copy(classification_score_on_test)
-            predictions_buffer[single_tester_name] = predictions
+            predictions_buffer[single_tester_name] = predictions.T
             metrics_buffer[single_tester_name] = metrics
 
         return testing_scores, predictions_buffer, metrics_buffer

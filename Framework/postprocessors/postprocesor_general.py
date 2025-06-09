@@ -57,8 +57,11 @@ class PostprocessorGeneral(ABC):
 
         :return: A tuple containing training scores and the last validation score.
         """
-        train_scores = load_txt(self.train_score_final_file_full_path)
-        valid_scores = load_txt(self.valid_score_over_epoch_per_batch_file_name)[-1]
+        # train_scores = load_txt(self.train_score_final_file_full_path)
+        # valid_scores = load_txt(self.valid_score_over_epoch_per_batch_file_name)[-1]
+        train_scores = np.load(self.train_score_final_file_full_path)
+        valid_scores = np.load(self.valid_score_over_epoch_per_batch_file_name)[-1]
+
         return train_scores, valid_scores
 
     def load_and_parse_valid_per_batch_per_epoch(self):

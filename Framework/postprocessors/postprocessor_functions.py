@@ -17,10 +17,11 @@ def mean_labels_over_epochs(data):
     """
     Calculates the mean metrics for each class over epochs.
 
-    :param data: A list or array of data per epoch.
+    :param data: np.ndarray
     :return: A dictionary with epochs, class 1 metrics, and class 0 metrics.
     """
     data = np.asarray(data)
+
 
     epochs = []
     class_1_metrics = []
@@ -30,8 +31,8 @@ def mean_labels_over_epochs(data):
         indices_1 = np.where(data_per_epoch[:, 0] == 1)
         indices_0 = np.where(data_per_epoch[:, 0] == 0)
 
-        class_1 = data_per_epoch[indices_1][:, 1]
-        class_0 = data_per_epoch[indices_0][:, 1]
+        class_1 = data_per_epoch[indices_1, 1]
+        class_0 = data_per_epoch[indices_0, 1]
 
         class_1 = np.mean(class_1)
         class_0 = np.mean(class_0)
