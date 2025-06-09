@@ -14,7 +14,7 @@ from Framework.models.transformer_vae import TransformerVAE
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
 from Framework.models.anomaly_transformer import AnomalyTransformer
-from Framework.loops.loops import train_loop, valid_loop, test_loop, test_loop_general
+from Framework.loops.loops import train_loop, valid_loop, test_loop
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.postprocessor_utils import get_print_message
