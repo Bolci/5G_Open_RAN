@@ -9,6 +9,8 @@ from typing import Callable
 def my_kl_loss(p, q):
     res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
     return torch.mean(torch.sum(res, dim=-1), dim=1)
+
+koef = 0.5
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     """
     Trains the model for one epoch.
@@ -51,7 +53,7 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
 
             series_loss /= len(prior)
             prior_loss /= len(prior)
-            koef = 0.5
+            # koef = 0.7
             loss1 = recon_loss - koef * series_loss
             loss2 = recon_loss + koef * prior_loss
             loss = loss1 + loss2
@@ -105,12 +107,35 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     """
     test_losses_to_print = []
     test_losses_score = []
-    model.output_attention = False
+    model.output_attention = True
     with torch.no_grad():
         for X, y in dataloader:
             X_ = X.to(device)
-            pred = model(X_)
-            test_loss = loss_fn(pred, X_).item()
+            pred, series, prior, _ = model(X_)
+
+            # Normalized prior
+            normalized_prior = []
+            for u in range(len(prior)):
+                norm = torch.sum(prior[u], dim=-1, keepdim=True)
+                norm_prior = prior[u] / norm.repeat(1, 1, 1, model.win_size)
+                normalized_prior.append(norm_prior)
+
+            # Series-Prior KL losses
+            series_loss = 0.0
+            prior_loss = 0.0
+            # koef = 0.7
+            for u in range(len(prior)):
+                s = series[u]
+                p = normalized_prior[u]
+                series_loss += torch.mean(my_kl_loss(s, p.detach()) + my_kl_loss(p.detach(), s))
+                prior_loss += torch.mean(my_kl_loss(p, s.detach()) + my_kl_loss(s.detach(), p))
+            series_loss /= len(prior)
+            prior_loss /= len(prior)
+
+            # Final loss
+            recon_loss = loss_fn(pred, X_)  # e.g., RMSE or MSE
+            total_loss = recon_loss + koef * prior_loss - koef * series_loss
+            test_loss = total_loss.item()
             test_losses_score.append(copy(test_loss))
 
             if not is_train:
@@ -203,7 +228,7 @@ def test_loop_general(dataloader_test,
             # Series-Prior KL losses
             series_loss = 0.0
             prior_loss = 0.0
-            koef = 0.5
+            # koef = 0.7
             for u in range(len(prior)):
                 s = series[u]
                 p = normalized_prior[u]
