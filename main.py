@@ -125,7 +125,7 @@ def main(path, args):
     # model = LSTMAutoencoder(72, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
-    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=0.0, activation='gelu', output_attention=True)
+    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads, e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='gelu', output_attention=True)
     # criterion = RMSELoss()
     criterion = nn.MSELoss(reduction='none')
     # criterion = MSEwithVarianceLoss()
@@ -249,7 +249,7 @@ if __name__ == "__main__":
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.0096, help="Learning rate"
+        "--learning_rate", type=float, default=0.01, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"

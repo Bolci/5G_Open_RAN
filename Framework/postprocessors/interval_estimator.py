@@ -43,10 +43,8 @@ class IntervalEstimatorMinMax(PostprocessorGeneral):
        Returns:
            int: 0 if the sample is within the interval, 1 otherwise.
        """
-        return (
-                (batch_of_samples >= self.measured_decision_line['min']) &
-                (batch_of_samples <= self.measured_decision_line['max'])
-        ).int()
+        return ((batch_of_samples < self.measured_decision_line['min']) |
+                (batch_of_samples > self.measured_decision_line['max'])).int()
 
     def get_decision_lines(self):
         _min = self.measured_decision_line['min']
@@ -141,9 +139,8 @@ class IntervalEstimatorStd(PostprocessorGeneral):
         _min = self.measured_decision_line['mean'] - self.measured_decision_line['std']*self.std_val_threshold
         _max = self.measured_decision_line['mean'] + self.measured_decision_line['std']*self.std_val_threshold
 
-        return ((batch_of_samples >= _min ) &
-                (batch_of_samples <= _max)
-        ).int()
+        return ((batch_of_samples < _min) |
+                (batch_of_samples > _max)).int()
 
 
     def estimate_decision_lines(self,
@@ -276,9 +273,9 @@ class IntervalEstimatorMAD(PostprocessorGeneral):
         _min = median - mad * self.mad_val_threshold
         _max = median + mad * self.mad_val_threshold
 
-        return ((batch_of_samples >= _min ) &
-                (batch_of_samples <= _max)
-        ).int()
+        return ((batch_of_samples < _min) |
+                (batch_of_samples > _max)).int()
+
 
 
 
