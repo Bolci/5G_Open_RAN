@@ -149,7 +149,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
             if not is_train:
                 val_losses_to_print.append(torch.vstack([copy(y), copy(val_loss)]))
 
-    val_losses_to_print = torch.concatenate(val_losses_to_print, dim=0).cpu().numpy().T if val_losses_to_print else []
+    val_losses_to_print = torch.concatenate(val_losses_to_print, dim=1).cpu().numpy().T if val_losses_to_print else []
     val_losses_score = torch.concatenate(val_losses_score, dim=0)
     val_loss_mean = torch.mean(val_losses_score).item()
     val_losses_score = val_losses_score.cpu().numpy()
