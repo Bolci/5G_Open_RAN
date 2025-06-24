@@ -9,7 +9,7 @@ def my_kl_loss(p, q):
     res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
     return torch.mean(res, dim=(-1, -2, -3))
 
-koef = 0.5
+koef = 10
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     """
     Trains the model for one epoch.

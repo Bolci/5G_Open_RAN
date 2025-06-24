@@ -157,6 +157,110 @@ class PreprocessorTypes:
 
         return result
 
+    @staticmethod
+    def engineered_multichannel_features(original_sequence, raw_data, max_dim: int = 48, win_size: int = 5):
+        """
+        Advanced preprocessing with engineered features:
+        - log-scaled magnitude
+        - normalized peak magnitude
+        - delay spread estimate
+        - local statistics (mean, std)
+
+        Output shape is (1, time, max_dim), where time = 1 for 2D structure compatibility.
+
+        Args:
+            original_sequence: Sequence metadata or reference. (shape: (features, time)).
+            raw_data: Raw received signal or correlation values. (shape: (features, time)).
+            max_dim (int): Max dimension - temporal.
+            win_size (int): Window size for local stats.
+
+        Returns:
+            Numpy array of shape (1, time=1, max_dim)
+        """
+        # Estimate channels
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)
+        data_abs = np.abs(data).astype(np.float32)  # magnitude
+
+        # Log scale
+        log_mag = DataPreprocessorFunctions.to_log(data_abs)  # shape: (T, C)
+
+        # Peak magnitude (normalized per time slice)
+        peak_mag = np.max(data_abs, axis=0, keepdims=True)
+        norm_peak = data_abs / (peak_mag + 1e-6)  # avoid div by 0
+
+        # Delay spread (standard deviation of power-weighted delays)
+        delays = np.arange(data_abs.shape[1])
+        power = data_abs ** 2
+        weighted_mean = np.sum(delays * power, axis=0) / (np.sum(power, axis=0) + 1e-6)
+        delay_spread = np.sqrt(
+            np.sum(((delays - weighted_mean[:, None]) ** 2) * power, axis=0) / (np.sum(power, axis=0) + 1e-6))
+        delay_spread = delay_spread[:, None]  # shape (T, 1)
+
+        # Local stats: moving average and std across carriers
+        local_mean = np.mean(data_abs[:, :win_size], axis=1, keepdims=True)
+        local_std = np.std(data_abs[:, :win_size], axis=1, keepdims=True)
+
+        # Stack all features: shape (T, F)
+        features = np.concatenate([log_mag, norm_peak, delay_spread, local_mean, local_std], axis=1)  # (T, C+4)
+
+        # Truncate or pad to max_dim
+        if features.shape[1] > max_dim:
+            features = features[:, :max_dim]
+        elif features.shape[1] < max_dim:
+            pad = np.zeros((features.shape[0], max_dim - features.shape[1]), dtype=np.float32)
+            features = np.concatenate((features, pad), axis=1)
+
+        features = np.expand_dims(features, axis=0)  # shape: (1, T, max_dim)
+
+        return features
+
+    @staticmethod
+    def phase_aware_multichannel_features(original_sequence, raw_data, max_dim: int = 48):
+        """
+        Preprocess complex channel data using magnitude and phase features.
+
+        Includes:
+        - Log-scaled magnitude
+        - Cosine of phase
+        - Sine of phase
+
+        Output is padded or truncated to (1, time, max_dim).
+
+        Args:
+            original_sequence: Sequence metadata or reference.
+            raw_data: Raw complex data (from cross-correlation, etc.) (shape: (features, time)).
+            max_dim (int): Final number of temporal steps rows.
+
+        Returns:
+            Numpy array of shape (1, time, max_dim)
+        """
+        # Step 1: Get estimated complex channel
+        data = DataPreprocessorFunctions.estimate_channels(raw_data, original_sequence)  # shape: (time, features)
+
+        # Step 2: Compute magnitude (log-scaled)
+        mag = np.abs(data).astype(np.float32)
+        log_mag = DataPreprocessorFunctions.to_log(mag)
+
+        # Step 3: Compute phase components
+        phase = np.angle(data)
+        cos_phase = np.cos(phase).astype(np.float32)
+        sin_phase = np.sin(phase).astype(np.float32)
+
+        # Step 4: Concatenate all features (time, features * 3)
+        features = np.concatenate([log_mag, cos_phase, sin_phase], axis=1)
+
+        # Step 5: Truncate or pad to max_dim
+        if features.shape[1] > max_dim:
+            features = features[:, :max_dim]
+        elif features.shape[1] < max_dim:
+            pad = np.zeros((features.shape[0], max_dim - features.shape[1]), dtype=np.float32)
+            features = np.concatenate([features, pad], axis=1)
+
+        # Step 6: Expand dims for batch compatibility
+        features = np.expand_dims(features, axis=0)  # shape: (1, time, max_dim)
+
+        return features
+
 
 class DataPreprocessor(PreprocessorTypes):
     def __init__(self):
@@ -171,6 +275,8 @@ class DataPreprocessor(PreprocessorTypes):
                                        'abs_only_by_one_sample': lambda x, y: PreprocessorTypes.abs_only_by_one(x, y),
                                        'abs_only_multichannel': lambda x, y: PreprocessorTypes.abs_only_multichannel(x, y),
                                        'raw_IQ': lambda x, y: PreprocessorTypes.raw_IQ(x, y),
+                                       'engineered_multichannel_features': lambda x, y: PreprocessorTypes.engineered_multichannel_features(x, y),
+
                                        }
         self.counters = {"Train": 0,
                          "Valid": 0,
