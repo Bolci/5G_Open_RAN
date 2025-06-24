@@ -95,10 +95,11 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(valid_predictions, min_bin, max_bin)
 
     fig, ax = plt.subplots(2,no_datasets_test+1, figsize=(5*(no_datasets_test+1), 10))
-    ax[0, 0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='r',
+    ax[0, 0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
               label='Normalized Histogram valid class 0')
-    ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='b',
-              label='Normalized Histogram valid class 1')
+    if len(class_1_parameters[1]) > 0:
+        ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='red',
+                  label='Normalized Histogram valid class 1')
 
 
     # add decision line

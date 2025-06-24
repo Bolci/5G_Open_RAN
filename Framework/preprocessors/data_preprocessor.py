@@ -106,9 +106,9 @@ class PreprocessorTypes:
         Preprocess multichannel data by taking the absolute value, converting to log scale, and padding/truncating to max_dim.
 
         Args:
-            original_sequence: The original sequence data.
-            raw_data: The raw data to preprocess.
-            max_dim (int): The maximum dimension for the data.
+            original_sequence: The original sequence data. (shape: (features, time)).
+            raw_data: The raw data to preprocess. (shape: (features, time)).
+            max_dim (int): Max dimension - temporal.
 
         Returns:
             Preprocessed data.
@@ -135,9 +135,9 @@ class PreprocessorTypes:
         Preprocess raw IQ data by separating real and imaginary parts, and padding/truncating to max_dim.
 
         Args:
-            original_sequence: The original sequence data.
-            raw_data: The raw data to preprocess.
-            max_dim (int): The maximum dimension for the data.
+            original_sequence: The original sequence data. (shape: (features, time)).
+            raw_data: The raw data to preprocess. (shape: (features, time)).
+            max_dim (int): Max dimension - temporal.
 
         Returns:
             Preprocessed data.

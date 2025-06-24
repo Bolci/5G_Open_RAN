@@ -134,10 +134,10 @@ def test_loop(dataloader_test,
     true_labels = torch.concatenate(true_labels, dim=0).cpu().numpy()
     predicted_labels = torch.concatenate(predicted_labels, dim=0).cpu().numpy()
     # classification_score = correct_classification_counter/no_samples
-    precision = precision_score(true_labels, predicted_labels, zero_division=0)
-    recall = recall_score(true_labels, predicted_labels, zero_division=0)
-    f1 = f1_score(true_labels, predicted_labels, zero_division=0)
+    precision = precision_score(true_labels, predicted_labels, zero_division=0.0)
+    recall = recall_score(true_labels, predicted_labels, zero_division=0.0)
+    f1 = f1_score(true_labels, predicted_labels, zero_division=0.0)
 
     classification_score = f1
-    predicted_results = torch.concatenate(predicted_results, dim=0).cpu().numpy()
+    predicted_results = torch.concatenate(predicted_results, dim=1).cpu().numpy()
     return classification_score, predicted_results, (precision, recall, f1)
