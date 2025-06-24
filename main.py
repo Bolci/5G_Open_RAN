@@ -29,8 +29,8 @@ import datetime
 
 def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
     model.to(device)
     criterion.to(device)
@@ -52,7 +52,7 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        # scheduler.step()  # uncomment if you want to update LR
+        scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
         print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
 
