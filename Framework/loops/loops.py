@@ -1,7 +1,6 @@
 # This script contains important loops for the development pipeline
 
 import torch
-import numpy as np
 from copy import copy
 import torch.nn as nn
 from sklearn.metrics import precision_score, recall_score, f1_score
@@ -232,5 +231,5 @@ def test_loop(dataloader_test,
     f1 = f1_score(true_labels, predicted_labels, zero_division=0.0)
 
     classification_score = f1
-    predicted_results = torch.concatenate(predicted_results, dim=0).cpu().numpy()
+    predicted_results = torch.concatenate(predicted_results, dim=1).cpu().numpy()
     return classification_score, predicted_results, (precision, recall, f1)

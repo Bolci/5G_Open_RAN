@@ -31,8 +31,8 @@ import datetime
 
 def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    scheduler = lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.1, total_iters=no_epochs//2)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
 
     model.to(device)
     criterion.to(device)
@@ -54,7 +54,7 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        # scheduler.step()  # uncomment if you want to update LR
+        scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
         print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
 
@@ -243,13 +243,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=20, help="Number of epochs"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32535, help="Batch size"
+        "--batch_size", type=int, default=32536, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.01, help="Learning rate"
+        "--learning_rate", type=float, default=0.008, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -264,22 +264,22 @@ if __name__ == "__main__":
         "--init_channels", type=int, default=12, help="Learning rate"
     )
     parser.add_argument(
-        "--dropout", type=float, default=0.2, help="Learning rate"
+        "--dropout", type=float, default=0.12, help="Learning rate"
     )
     # parser.add_argument(
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=20, help="Embedding dimension"
+        "--embed_dim", type=int, default=48, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=2, help="Multihead attention heads"
+        "--num_heads", type=int, default=4, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=4, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=5, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
-        "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
+        "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval" #abs_only_multichannel abs_only_by_one_sample
     )
     parser.add_argument(
         "--wandb_log", type=bool, default=True, help="Log to wandb"
