@@ -13,7 +13,7 @@ from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.models.transformer_vae import TransformerVAE
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
-from Framework.loops.loops import train_loop, valid_loop, test_loop
+from Framework.models.DSVDD import DeepSVDD, SimpleNet
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.graph_worker import get_distribution_plot
@@ -34,7 +34,11 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
 
     model.to(device)
     criterion.to(device)
-
+    if model.model_name == "DeepSVDD":
+        from Framework.loops.dsvdd_loops import train_loop, valid_loop
+        model.initialize_center(dataloaders['Train'][0], device)
+    else:
+        from Framework.loops.loops import train_loop, valid_loop
     # warm-up
     _, _, _ = valid_loop(dataloaders['Valid'][0],
                       model,
@@ -138,6 +142,8 @@ def main(path, args):
     #         ssim_loss = self.sim_loss(output, target)
     #         return self.lambda_1 * rmse_loss + self.lambda_2 * ssim_loss
     # criterion = CombLoss(lambda_1=0.3, lambda_2=0.7)
+    model = DeepSVDD(SimpleNet().to(device))
+    # criterion = RMSELoss()
     criterion = nn.MSELoss(reduction='none')
     # criterion = VAELoss()
 
@@ -173,17 +179,6 @@ def main(path, args):
     path_train_final_per_batch = os.path.join(saving_path, train_final_score_per_batch)
     np.save(path_train_final_per_batch, train_score)
 
-    # #saving loss over epochs
-    # plt.figure()
-    # plt.plot(train_losses, label='Train')
-    # plt.plot(valid_losses, label='Valid')
-    # fig_path = os.path.join(saving_path, 'fig_1_train_valid.png')
-    # plt.xlabel("epochs")
-    # plt.ylabel("RMSE")
-    # plt.grid()
-    # plt.legend()
-    # plt.savefig(fig_path)
-
     plt.figure()
     plt.plot(train_losses, label='Train')
     plt.plot(valid_metrics['Class_0'], label='Valid_class_0')
@@ -211,6 +206,11 @@ def main(path, args):
     valid_scores = tester.estimate_decision_lines()
     print('Validation scores is:')
     print(valid_scores)
+
+    if model.model_name == "DSVDD":
+        from Framework.loops.dsvdd_loops import test_loop
+    else:
+        from Framework.loops.loops import test_loop
 
     #test data loader and loop
     predictions_buffer = []
