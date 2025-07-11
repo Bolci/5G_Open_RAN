@@ -32,7 +32,7 @@ import datetime
 def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=20, eta_min=1e-5)
 
     model.to(device)
     criterion.to(device)
@@ -249,34 +249,25 @@ if __name__ == "__main__":
         "--batch_size", type=int, default=32536, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.008, help="Learning rate"
-    )
-    parser.add_argument(
-        "--expansion_dim", type=int, default=2, help="Learning rate"
-    )
-    parser.add_argument(
-        "--no_layers_per_module", type=int, default=5, help="Learning rate"
-    )
-    parser.add_argument(
-        "--num_layers_per_layer", type=int, default=1, help="Learning rate"
+        "--learning_rate", type=float, default=0.00898393465007154, help="Learning rate"
     )
     parser.add_argument(
         "--init_channels", type=int, default=12, help="Learning rate"
     )
     parser.add_argument(
-        "--dropout", type=float, default=0.12, help="Learning rate"
+        "--dropout", type=float, default=0.2612974581987645, help="Learning rate"
     )
     # parser.add_argument(
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=48, help="Embedding dimension"
+        "--embed_dim", type=int, default=160, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=4, help="Multihead attention heads"
+        "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=5, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval" #abs_only_multichannel abs_only_by_one_sample
@@ -284,8 +275,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_log", type=bool, default=True, help="Log to wandb"
     )
-    args = parser.parse_args()
 
+    args = parser.parse_args()
     # os.environ["WANDB_SILENT"] = "true"
     if args.wandb_log:
         wandb.init(

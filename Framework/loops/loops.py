@@ -9,7 +9,7 @@ def my_kl_loss(p, q):
     res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
     return torch.mean(res, dim=(-1, -2, -3))
 
-koef = 10
+koef = 8
 def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     """
     Trains the model for one epoch.
@@ -113,6 +113,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     with torch.no_grad():
         for X, y in dataloader:
             X_ = X.to(device)
+            y = y.to(device)
             if model.model_name == "anomaly_transformer":
 
                 pred, series, prior, _ = model(X_)
@@ -176,6 +177,7 @@ def test_loop(dataloader_test,
             if not (len(X.shape) == 3):
                 X = X.unsqueeze(dim=0)
             X_ = X.to(device)
+            y = y.to(device)
             # ----
             if model.model_name == "anomaly_transformer":
 
