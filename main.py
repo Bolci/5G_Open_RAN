@@ -13,7 +13,8 @@ from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.models.transformer_vae import TransformerVAE
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
-from Framework.models.DSVDD import DeepSVDD, SimpleNet
+from Framework.models.LSTM_VAE import TemporalVAE
+from Framework.models.DSVDD import DeepSVDD
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester
 from Framework.postprocessors.graph_worker import get_distribution_plot
@@ -30,7 +31,7 @@ import datetime
 def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=no_epochs)
 
     model.to(device)
     criterion.to(device)
@@ -59,6 +60,8 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
         scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
         print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
+        if model.model_name == "DeepSVDD" and epoch % 5 == 0:
+            print(f"Hypersphere radius R:{model.R}, center c:{model.c}")
 
         model.eval()
         val_loss, val_all, _ = valid_loop(dataloaders['Valid'][0],
@@ -122,9 +125,9 @@ def main(path, args):
     # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
     # model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
     #                                dropout=args.dropout)
-    options = [64, 32, 16, 8, 4]
-    hidden_dims = options[:args.num_layers]
-    model = LSTMAutoencoder(62, hidden_dims, args.dropout)
+    # options = [64, 32, 16, 8, 4]
+    # hidden_dims = options[:args.num_layers]
+    # model = LSTMAutoencoder(62, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
     # criterion = RMSELoss()
@@ -142,7 +145,11 @@ def main(path, args):
     #         ssim_loss = self.sim_loss(output, target)
     #         return self.lambda_1 * rmse_loss + self.lambda_2 * ssim_loss
     # criterion = CombLoss(lambda_1=0.3, lambda_2=0.7)
-    model = DeepSVDD(SimpleNet().to(device))
+    model = DeepSVDD()
+    # model.init_model(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
+    # model.init_model(input_dim=62, out_features=args.out_features, d_model=args.embed_dim, nhead=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout)
+    # model = TemporalAutoencoder(input_dim=62, hidden_dims=[48, 32, 16])
     # criterion = RMSELoss()
     criterion = nn.MSELoss(reduction='none')
     # criterion = VAELoss()
@@ -207,7 +214,7 @@ def main(path, args):
     print('Validation scores is:')
     print(valid_scores)
 
-    if model.model_name == "DSVDD":
+    if model.model_name == "DeepSVDD":
         from Framework.loops.dsvdd_loops import test_loop
     else:
         from Framework.loops.loops import test_loop
@@ -253,13 +260,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OpenRAN neural network")
     parser.add_argument(
-        "--epochs", type=int, default=50, help="Number of epochs"
+        "--epochs", type=int, default=75, help="Number of epochs"
     )
     parser.add_argument(
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.01, help="Learning rate"
+        "--learning_rate", type=float, default=0.001, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -294,6 +301,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--wandb_log", type=bool, default=True, help="Log to wandb"
     )
+
+    # DSVDD specific parameters
+    parser.add_argument("--nu", type=float, default=0.01, help="Fraction of outliers for DSVDD")
+    parser.add_argument("--num_channels", type=int, default=8, help="Embedding dimension for DSVDD")
+    parser.add_argument("--out_features", type=int, default=8, help="Output features for DSVDD")
+    parser.add_argument("--kernel_size", type=int, default=5, help="Output features for DSVDD")
+
+
     args = parser.parse_args()
 
     # os.environ["WANDB_SILENT"] = "true"
@@ -303,8 +318,8 @@ if __name__ == "__main__":
             entity="OPEN_5G_RAN_team",
             #name="all_50_complex",
             config=vars(parser.parse_args()),
-            mode="online"
-            # tags=[f"VAE_positional_enc"]
+            mode="online",
+            tags=[f"GRU"]
         )
 
     main(paths_config, args)

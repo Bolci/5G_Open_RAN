@@ -36,9 +36,10 @@ def train_loop(dataloader, model, loss_fn, optimizer, device="cuda"):
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
         X_ = X.to(device).squeeze()
-        pred = model.model(X_)
+        pred = model(X_)
         # loss = loss_fn(pred, X_)
         loss = model.loss_function(pred)
+        loss = loss.mean()
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
@@ -76,27 +77,33 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
     tuple
         The mean validation loss, a list of losses to print, and a list of score losses.
     """
-    test_losses_to_print = []
-    test_losses_score = []
+    val_losses_to_print = []
+    val_losses_score = []
 
     with torch.no_grad():
         for X, y in dataloader:
             X_ = X.to(device).squeeze()
-            pred = model.model(X_)
-            test_loss = model.loss_function(pred).item()
-
-            # test_loss = loss_fn(pred, X_).item()
-            test_losses_score.append(copy(test_loss))
+            pred = model(X_)
+            val_loss = model.loss_function(pred)
+            # Uncomment the line below if you want to use a different loss function
+            val_losses_score.append(copy(val_loss))
 
             if not is_train:
-                test_losses_to_print.append([copy(y.item()), copy(test_loss)])
+                val_losses_to_print.append(torch.vstack([y, copy(val_loss)]))
 
-    test_loss_mean = np.mean(np.asarray(test_losses_score))
-    print(f"Avg loss: {test_loss_mean:>8f} \n")
-    # print(test_losses_to_print)
-    return test_loss_mean, test_losses_to_print, test_losses_score
+    val_losses_to_print = torch.concatenate(val_losses_to_print,
+                                            dim=1).cpu().numpy().T if val_losses_to_print else []
+    val_losses_score = torch.concatenate(val_losses_score, dim=0)
+    val_loss_mean = torch.mean(val_losses_score).item()
+    val_losses_score = val_losses_score.cpu().numpy()
+    print(f"Avg loss: {val_loss_mean:>8f} \n")
 
-def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device="cuda"):
+    # val_loss_mean - FLOAT - average loss over all samples in the validation set
+    # val_losses_to_print - np.ndarray - array of shape [BATCH, 2] with first column being labels and second column being losses
+    # val_losses_score - np.ndarray - array of shape [BATCH, ] with per-sample losses
+    return val_loss_mean, val_losses_to_print, val_losses_score
+
+def test_loop(dataloader_test, model: nn.Module, loss_fn, predict_class, device="cuda"):
     """
     Tests the model.
 
@@ -129,60 +136,25 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, threshold: int, device
             if not (len(X.shape) == 3):
                 X = X.unsqueeze(dim=0)
 
-            pred = model.model(X.to(device))
-            test_loss = model.loss_function(pred).item()
+            pred = model(X.to(device))
+            test_loss = model.loss_function(pred)
             # test_loss = loss_fn(pred, X).item()
 
-            predicted_label = 1 if test_loss > threshold else 0
+            predicted_label = model.predict((X.to(device)))
             predicted_labels.append(predicted_label)
-            true_labels.append(y.item())
+            true_labels.append(y)
 
-            if (test_loss <= threshold and y.item() == 0) or (test_loss > threshold and y.item() == 1):
-                counter_var_0 +=1
+            predicted_results.append(torch.vstack([copy(y), copy(test_loss)]))
 
-
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
-    classification_score_0 = float(counter_var_0)/float(no_samples)
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
-    classification_score_0 = f1
-    return classification_score_0, predicted_results, (precision, recall, f1)
-
-
-def test_loop_general(dataloader_test,
-              model: nn.Module,
-              loss_fn: Callable,
-              predict_class: Callable,
-              device="cuda"):
-
-    predicted_results = []
-    true_labels = []
-    predicted_labels = []
-    correct_classification_counter = 0
-    no_samples = len(dataloader_test)
-
-    with torch.no_grad():
-        for X, y in dataloader_test:
-            if not (len(X.shape) == 3):
-                X = X.unsqueeze(dim=0)
-
-            pred = model(X.to(device))
-            test_loss = loss_fn(pred, X).item()
-
-            predicted_label = predict_class(test_loss)
-            predicted_labels.append(predicted_label)
-            true_labels.append(y.item())
-
-            if y == predict_class(test_loss):
-                correct_classification_counter += 1
-
-            predicted_results.append(([copy(y.item()), copy(test_loss)]))
-
-    classification_score = correct_classification_counter/no_samples
-    precision = precision_score(true_labels, predicted_labels)
-    recall = recall_score(true_labels, predicted_labels)
-    f1 = f1_score(true_labels, predicted_labels)
+    true_labels = torch.concatenate(true_labels, dim=0).cpu().numpy()
+    predicted_labels = torch.concatenate(predicted_labels, dim=0).cpu().numpy()
+    # classification_score = correct_classification_counter/no_samples
+    precision = precision_score(true_labels, predicted_labels, zero_division=0.0)
+    recall = recall_score(true_labels, predicted_labels, zero_division=0.0)
+    f1 = f1_score(true_labels, predicted_labels, zero_division=0.0)
 
     classification_score = f1
+    predicted_results = torch.concatenate(predicted_results, dim=1).cpu().numpy()
     return classification_score, predicted_results, (precision, recall, f1)
+
+
