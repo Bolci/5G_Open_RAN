@@ -335,7 +335,7 @@ if __name__ == "__main__":
             #name="all_50_complex",
             config=vars(parser.parse_args()),
             mode="online",
-            tags=[f"GRU"]
+            tags=[f"{args.cell_type}"]
         )
 
     main(paths_config, args)
