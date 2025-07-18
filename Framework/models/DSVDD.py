@@ -122,8 +122,12 @@ class DeepSVDD(nn.Module):
     #
     #     # Positional encoding
     #     self.pos_encoder = PositionalEncoding(d_model)
-    def init_model(self, input_dim=62,hidden_dim=12, num_layers=1, dropout=0.1):
-        self.rnn = nn.LSTM(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, batch_first=True)
+    def init_model(self, input_dim=62,hidden_dim=12, num_layers=1, dropout=0.1, cell_type='LSTM'):
+        if cell_type == 'LSTM':
+            self.rnn = nn.LSTM(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, batch_first=True)
+        elif cell_type == 'GRU':
+            self.rnn = nn.GRU(input_dim, hidden_dim, num_layers=num_layers, dropout=dropout, batch_first=True)
+
         self.projection = nn.Linear(hidden_dim, hidden_dim)
     # def forward(self, x):
     #     # x shape: (batch, time, features)

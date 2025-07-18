@@ -16,7 +16,7 @@ from Framework.models.autoencoder_rnn import RNNAutoencoder
 from Framework.models.LSTM_VAE import TemporalVAE
 from Framework.models.DSVDD import DeepSVDD
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
-from Framework.postprocessors.tester import Tester
+from Framework.postprocessors.tester import Tester, TesterV2
 from Framework.postprocessors.graph_worker import get_distribution_plot
 import os
 import torch
@@ -148,7 +148,7 @@ def main(path, args):
     model = DeepSVDD()
     # model.init_model(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
     # model.init_model(input_dim=62, out_features=args.out_features, d_model=args.embed_dim, nhead=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout)
+    model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
     # model = TemporalAutoencoder(input_dim=62, hidden_dims=[48, 32, 16])
     # criterion = RMSELoss()
     criterion = nn.MSELoss(reduction='none')
@@ -176,13 +176,19 @@ def main(path, args):
     valid_over_epoch_over_batch_with_labels = 'valid_epochs_labels.npy'
     train_final_score_per_batch = 'train_final_per_batch.npy'
 
-    #saving metrics
+    # Saving train loss over epochs
     path_training_over_epochs = os.path.join(saving_path, train_over_epoch)
     np.save(path_training_over_epochs, train_losses)
+
+    # Saving valid loss over epochs
     path_valid_over_epochs = os.path.join(saving_path, valid_over_epoch)
     np.save(path_valid_over_epochs, valid_losses)
+
+    # Saving sample-wise valid loss over epochs with labels
     path_valid_epochs_labels = os.path.join(saving_path, valid_over_epoch_over_batch_with_labels)
     np.save(path_valid_epochs_labels, valid_loss_all)
+
+    # Saving train loss per sample in last epoch
     path_train_final_per_batch = os.path.join(saving_path, train_final_score_per_batch)
     np.save(path_train_final_per_batch, train_score)
 
@@ -202,12 +208,19 @@ def main(path, args):
     torch.save(model.state_dict(), model_path)
 
     #testing loop
-    tester = Tester(result_folder_path=path['Saving_path'],
+    # tester = Tester(result_folder_path=path['Saving_path'],
+    #                 attempt_name=saving_folder_name,
+    #                 train_score_over_epoch_file_name=train_over_epoch,
+    #                 valid_score_over_epoch_file_name=valid_over_epoch,
+    #                 valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
+    #                 train_score_final_file_name=train_final_score_per_batch)
+
+    tester = TesterV2(result_folder_path=path['Saving_path'],
                     attempt_name=saving_folder_name,
-                    train_score_over_epoch_file_name=train_over_epoch,
-                    valid_score_over_epoch_file_name=valid_over_epoch,
-                    valid_score_over_epoch_per_batch_file_name=valid_over_epoch_over_batch_with_labels,
-                    train_score_final_file_name=train_final_score_per_batch)
+                    train_score_over_epoch_file_name=train_losses,
+                    valid_score_over_epoch_file_name=valid_losses,
+                    valid_score_over_epoch_per_batch_file_name=valid_loss_all,
+                    train_score_final_file_name=train_score)
 
     #valid loop
     valid_scores = tester.estimate_decision_lines()
@@ -305,8 +318,11 @@ if __name__ == "__main__":
     # DSVDD specific parameters
     parser.add_argument("--nu", type=float, default=0.01, help="Fraction of outliers for DSVDD")
     parser.add_argument("--num_channels", type=int, default=8, help="Embedding dimension for DSVDD")
-    parser.add_argument("--out_features", type=int, default=8, help="Output features for DSVDD")
-    parser.add_argument("--kernel_size", type=int, default=5, help="Output features for DSVDD")
+    parser.add_argument("--out_features", type=int, default=4, help="Output features for DSVDD")
+    parser.add_argument("--kernel_size", type=int, default=3, help="Output features for DSVDD")
+
+
+    parser.add_argument("--cell_type", type=str, default="GRU", help="Model name for DSVDD")
 
 
     args = parser.parse_args()

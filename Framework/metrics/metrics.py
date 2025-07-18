@@ -102,21 +102,35 @@ class DSVDDLoss(nn.Module):
 
 
 class VAELoss(nn.Module):
-    def __init__(self, lambda_var=0.1):
+    def __init__(self, lambda_var=0.1, reduction='none'):
         super().__init__()
         self.lambda_var = lambda_var
-
+        self.reduction = reduction
 
     def forward(self, output, x):
         recon_x, mu, log_var = output
 
-        # Compute pixel-wise MSE loss
-        mse_loss = (recon_x - x) ** 2
-        recon_loss = mse_loss.mean()
+        # Compute sample-wise MSE loss [batch_size, ...]
+        mse_loss = (recon_x - x).pow(2)
 
-        # Penalize the variance of reconstruction errors
-        loss_variance = mse_loss.var()
+        # Flatten all dimensions except batch
+        if mse_loss.dim() > 2:
+            mse_loss = mse_loss.view(mse_loss.size(0), -1).mean(dim=1)  # [batch_size]
 
-        # KL Divergence
-        kl_div = -0.5 * torch.mean(1 + log_var - mu.pow(2) - log_var.exp())
-        return recon_loss + kl_div + self.lambda_var * loss_variance
+        # KL Divergence per sample [batch_size]
+        kl_div = -0.5 * (1 + log_var - mu.pow(2) - log_var.exp()).sum(dim=1)
+
+        # Total loss per sample
+        loss = mse_loss + torch.mean(kl_div, dim=1)  # [batch_size]
+
+        # Add variance penalty if needed (still computed across batch)
+        if self.lambda_var > 0:
+            loss_variance = mse_loss.var()  # Scalar
+            loss = loss + self.lambda_var * loss_variance
+
+        # Apply reduction if needed
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        return loss  # [batch_size]

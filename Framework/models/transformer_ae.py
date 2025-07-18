@@ -62,3 +62,7 @@ class TransformerAutoencoder(nn.Module):
         x = self.embedding(x)
         x = self.positional_encoding(x)
         return self.encoder(x)
+
+    def decode(self, x):
+        decoded = self.decoder(x, x)
+        return self.fc_out(decoded)

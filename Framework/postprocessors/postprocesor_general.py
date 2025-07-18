@@ -59,8 +59,13 @@ class PostprocessorGeneral(ABC):
         """
         # train_scores = load_txt(self.train_score_final_file_full_path)
         # valid_scores = load_txt(self.valid_score_over_epoch_per_batch_file_name)[-1]
-        train_scores = np.load(self.train_score_final_file_full_path)
-        valid_scores = np.load(self.valid_score_over_epoch_per_batch_file_name)[-1]
+        # switch bettween filepath and nparray
+        if isinstance(self.train_score_final_file_full_path, np.ndarray):
+            train_scores = self.train_score_final_file_full_path
+            valid_scores = self.valid_score_over_epoch_per_batch_file_name[-1]
+        else:
+            train_scores = np.load(self.train_score_final_file_full_path)
+            valid_scores = np.load(self.valid_score_over_epoch_per_batch_file_name)[-1]
 
         return train_scores, valid_scores
 
@@ -80,8 +85,14 @@ class PostprocessorGeneral(ABC):
 
         :return: A tuple containing training scores and validation scores over epochs.
         """
-        train_scores = load_txt(self.train_score_over_epoch_full_path)
-        valid_scores = load_txt(self.valid_score_over_epoch_full_path)
+
+        # switch bettween filepath and np.array
+        if isinstance(self.train_score_over_epoch_full_path, np.ndarray):
+            train_scores = self.train_score_over_epoch_full_path
+            valid_scores = self.valid_score_over_epoch_full_path
+        else:
+            train_scores = load_txt(self.train_score_over_epoch_full_path)
+            valid_scores = load_txt(self.valid_score_over_epoch_full_path)
         return train_scores, valid_scores
 
     @abstractmethod
