@@ -113,7 +113,7 @@ def test_loop(dataloader_test,
     true_labels = []
     predicted_labels = []
     correct_classification_counter = 0
-    no_samples = len(dataloader_test)
+    no_samples = 0
 
     with torch.no_grad():
         for X, y in dataloader_test:
@@ -127,17 +127,17 @@ def test_loop(dataloader_test,
             predicted_labels.append(predicted_label)
             true_labels.append(y)
 
-            # if y == predict_class(test_loss):
-            #     correct_classification_counter += 1
+            correct_classification_counter += (y == predicted_label).sum().item()
+            no_samples += len(y)
 
             predicted_results.append(torch.vstack([copy(y), copy(test_loss)]))
     true_labels = torch.concatenate(true_labels, dim=0).cpu().numpy()
     predicted_labels = torch.concatenate(predicted_labels, dim=0).cpu().numpy()
-    # classification_score = correct_classification_counter/no_samples
+    accuracy = correct_classification_counter/no_samples
     precision = precision_score(true_labels, predicted_labels, zero_division=0.0)
     recall = recall_score(true_labels, predicted_labels, zero_division=0.0)
     f1 = f1_score(true_labels, predicted_labels, zero_division=0.0)
 
     classification_score = f1
     predicted_results = torch.concatenate(predicted_results, dim=1).cpu().numpy()
-    return classification_score, predicted_results, (precision, recall, f1)
+    return classification_score, predicted_results, (accuracy,precision, recall, f1)

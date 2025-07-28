@@ -174,7 +174,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
             value = [f"{value:.3f}" for value in metrics]
             table_data.append([key] + value)
         # table_data = [[key, f"{value}"] for key, values in metrics_buffer[id_dataset].items()]
-        table = ax[1, id_dataset+1].table(cellText=table_data, colLabels=["Estim.", "Prec.", "Recall", "F1"], loc='center')
+        table = ax[1, id_dataset+1].table(cellText=table_data, colLabels=["Estim.","Accur.", "Prec.", "Recall", "F1"], loc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(9)
         table.scale(1.5, 1.5)  # Increase the width of the first column
@@ -232,8 +232,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
             value = [f"{value:.3f}" for value in metrics]
             table_data.append([key] + value)
         # table_data = [[key, f"{value}"] for key, values in metrics_buffer[id_dataset].items()]
-        table = ax2[1].table(cellText=table_data, colLabels=["Estim.", "Prec.", "Recall", "F1"],
-                                            loc='center')
+        table = ax2[1].table(cellText=table_data, colLabels=["Estim.","Accur.", "Prec.", "Recall", "F1"], loc='center')
         table.auto_set_font_size(False)
         table.set_fontsize(9)
         table.scale(1.5, 1.5)  # Increase the width of the first column
