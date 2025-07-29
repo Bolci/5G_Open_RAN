@@ -136,27 +136,9 @@ def main(path, args):
     # model = LSTMAutoencoder(62, hidden_dims, args.dropout)
     # model = Autoencoder1D()
     # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
-    # criterion = RMSELoss()
-    # criterion = SSIMLoss()
-    # class CombLoss(nn.Module):
-    #     def __init__(self, lambda_1=0.5, lambda_2=0.5):
-    #         super().__init__()
-    #         self.lambda_1 = lambda_1
-    #         self.lambda_2 = lambda_2
-    #         self.rec_loss = RMSELoss()
-    #         self.sim_loss = SSIMLoss()
-    #
-    #     def forward(self, output, target):
-    #         rmse_loss = self.rec_loss(output, target)
-    #         ssim_loss = self.sim_loss(output, target)
-    #         return self.lambda_1 * rmse_loss + self.lambda_2 * ssim_loss
-    # criterion = CombLoss(lambda_1=0.3, lambda_2=0.7)
-    model = RNN_DSVDD(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
-    # model.init_model(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
-    # model.init_model(input_dim=62, out_features=args.out_features, d_model=args.embed_dim, nhead=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    # model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
-    # model = TemporalAutoencoder(input_dim=62, hidden_dims=[48, 32, 16])
-    # criterion = RMSELoss()
+
+    # model = RNN_DSVDD(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
+    # model = CNN_DSVDD(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
     criterion = nn.MSELoss(reduction='none')
     # criterion = VAELoss()
 
