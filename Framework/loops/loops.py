@@ -140,4 +140,4 @@ def test_loop(dataloader_test,
 
     classification_score = f1
     predicted_results = torch.concatenate(predicted_results, dim=1).cpu().numpy()
-    return classification_score, predicted_results, (accuracy,precision, recall, f1)
+    return classification_score, predicted_results, (accuracy, precision, recall, f1)

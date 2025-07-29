@@ -129,7 +129,6 @@ def test_loop(dataloader_test, model: nn.Module, loss_fn, predict_class, device=
     true_labels = []
     predicted_labels = []
     no_samples = 0
-    counter_var_0 = 0
     correct_classification_counter = 0
 
     with torch.no_grad():

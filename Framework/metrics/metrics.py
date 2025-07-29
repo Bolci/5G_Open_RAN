@@ -121,7 +121,7 @@ class VAELoss(nn.Module):
         kl_div = -0.5 * (1 + log_var - mu.pow(2) - log_var.exp()).sum(dim=1)
 
         # Total loss per sample
-        loss = mse_loss + torch.mean(kl_div, dim=1)  # [batch_size]
+        loss = mse_loss + kl_div # [batch_size]
 
         # Add variance penalty if needed (still computed across batch)
         if self.lambda_var > 0:

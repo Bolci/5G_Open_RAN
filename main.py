@@ -11,10 +11,11 @@ from Framework.models.autoencoder_LSTM import LSTMAutoencoder, LSTMAutoencoderCu
 from Framework.models.AE_CNN_v2 import CNNAEV2
 from Framework.models.transformer_ae import TransformerAutoencoder
 from Framework.models.transformer_vae import TransformerVAE
+from Framework.models.anomaly_transformer import AnomalyTransformer
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
 from Framework.models.LSTM_VAE import TemporalVAE
-from Framework.models.DSVDD import DeepSVDD
+from Framework.models.DSVDD import RNN_DSVDD, CNN_DSVDD
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester, TesterV2
 from Framework.postprocessors.graph_worker import get_distribution_plot
@@ -38,6 +39,8 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
     if model.model_name == "DeepSVDD":
         from Framework.loops.dsvdd_loops import train_loop, valid_loop
         model.initialize_center(dataloaders['Train'][0], device)
+    elif model.model_name == "anomaly_transformer":
+        from Framework.loops.anomaly_tr_loops import train_loop, valid_loop
     else:
         from Framework.loops.loops import train_loop, valid_loop
     # warm-up
@@ -57,7 +60,7 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        scheduler.step()  # uncomment if you want to update LR
+        # scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
         print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
         if model.model_name == "DeepSVDD" and epoch % 5 == 0:
@@ -125,6 +128,9 @@ def main(path, args):
     # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
     # model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
     #                                dropout=args.dropout)
+    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads,
+                               e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='gelu',
+                               output_attention=True)
     # options = [64, 32, 16, 8, 4]
     # hidden_dims = options[:args.num_layers]
     # model = LSTMAutoencoder(62, hidden_dims, args.dropout)
@@ -145,10 +151,10 @@ def main(path, args):
     #         ssim_loss = self.sim_loss(output, target)
     #         return self.lambda_1 * rmse_loss + self.lambda_2 * ssim_loss
     # criterion = CombLoss(lambda_1=0.3, lambda_2=0.7)
-    model = DeepSVDD()
+    model = RNN_DSVDD(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
     # model.init_model(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
     # model.init_model(input_dim=62, out_features=args.out_features, d_model=args.embed_dim, nhead=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
+    # model.init_model(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
     # model = TemporalAutoencoder(input_dim=62, hidden_dims=[48, 32, 16])
     # criterion = RMSELoss()
     criterion = nn.MSELoss(reduction='none')
@@ -229,6 +235,8 @@ def main(path, args):
 
     if model.model_name == "DeepSVDD":
         from Framework.loops.dsvdd_loops import test_loop
+    elif model.model_name == "anomaly_transformer":
+        from Framework.loops.anomaly_tr_loops import test_loop
     else:
         from Framework.loops.loops import test_loop
 
@@ -300,13 +308,13 @@ if __name__ == "__main__":
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=10, help="Embedding dimension"
+        "--embed_dim", type=int, default=50, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=1, help="Multihead attention heads"
+        "--num_heads", type=int, default=2, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=5, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
@@ -335,7 +343,7 @@ if __name__ == "__main__":
             #name="all_50_complex",
             config=vars(parser.parse_args()),
             mode="online",
-            tags=[f"{args.cell_type}"]
+            # tags=[f"{args.cell_type}"]
         )
 
     main(paths_config, args)
