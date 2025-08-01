@@ -60,7 +60,7 @@ def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs
                                 optimizer,
                                 device=device)
         before_lr = optimizer.param_groups[0]["lr"]
-        # scheduler.step()  # uncomment if you want to update LR
+        scheduler.step()  # uncomment if you want to update LR
         after_lr = optimizer.param_groups[0]["lr"]
         print(f"Epoch {epoch}: lr {before_lr:.8f} -> {after_lr:.8f}")
         if model.model_name == "DeepSVDD" and epoch % 5 == 0:
