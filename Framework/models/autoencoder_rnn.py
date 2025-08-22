@@ -3,10 +3,10 @@ import torch.nn as nn
 class RNNAutoencoder(nn.Module):
     def __init__(self, input_dim=72, hidden_dims=[64, 32, 16], unit_type="lstm", dropout=0.2):
         super(RNNAutoencoder, self).__init__()
-        self.name = "rnn_ae"
-        if unit_type == "lstm":
+        self.model_name = "rnn_ae"
+        if unit_type.lower() == "lstm":
             self.unit = nn.LSTM
-        elif unit_type == "gru":
+        elif unit_type.lower() == "gru":
             self.unit = nn.GRU
         else:
             raise ValueError("Invalid unit type. Choose between 'lstm' and 'gru'")

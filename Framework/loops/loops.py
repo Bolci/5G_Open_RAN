@@ -86,7 +86,7 @@ def valid_loop(dataloader, model, loss_fn, device="cuda", is_train=False):
             X = X.to(device)
             pred = model(X)
             val_loss = loss_fn(pred, X) # return per sample loss [BATCH, ]
-            val_loss = val_loss.mean(dim=(1,2))  #
+            val_loss = val_loss.mean(dim=(1,2))  if not "vae" in model.model_name.lower() else val_loss
             val_losses_score.append(copy(val_loss))
 
             if not is_train:
@@ -122,7 +122,7 @@ def test_loop(dataloader_test,
 
             pred = model(X.to(device))
             test_loss = loss_fn(pred, X) # return per sample loss
-            test_loss = test_loss.mean(dim=(1,2))
+            test_loss = test_loss.mean(dim=(1,2)) if not "vae" in model.model_name.lower() else test_loss
             predicted_label = predict_class(test_loss)
             predicted_labels.append(predicted_label)
             true_labels.append(y)

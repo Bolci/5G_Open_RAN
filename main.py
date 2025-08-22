@@ -15,7 +15,7 @@ from Framework.models.anomaly_transformer import AnomalyTransformer
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
 from Framework.models.LSTM_VAE import TemporalVAE
-from Framework.models.DSVDD import RNN_DSVDD, CNN_DSVDD
+from Framework.models.DSVDD import RNN_DSVDD, CNN_DSVDD, Transformer_DSVDD
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester, TesterV2
 from Framework.postprocessors.graph_worker import get_distribution_plot
@@ -28,6 +28,32 @@ from torch import nn
 import wandb
 import datetime
 
+from torch import nn as _nn
+
+def apply_init(m):
+    if isinstance(m, (_nn.Linear, _nn.Conv1d, _nn.Conv2d)):
+        _nn.init.xavier_uniform_(m.weight, gain=_nn.init.calculate_gain('relu'))
+        if m.bias is not None:
+            _nn.init.zeros_(m.bias)
+    elif isinstance(m, (_nn.GRU, _nn.LSTM)):
+        for name, p in m.named_parameters():
+            if "weight_ih" in name:
+                _nn.init.xavier_uniform_(p)
+            elif "weight_hh" in name:
+                _nn.init.orthogonal_(p)
+            elif "bias" in name:
+                _nn.init.zeros_(p)
+    elif isinstance(m, _nn.Embedding):
+        _nn.init.normal_(m.weight, mean=0.0, std=0.02)
+
+def init_transformer_block(block: _nn.Module):
+    for name, p in block.named_parameters():
+        if p.dim() >= 2 and ('attn' in name or 'proj' in name or 'qkv' in name):
+            _nn.init.orthogonal_(p)
+        elif p.dim() >= 2:
+            _nn.init.xavier_uniform_(p)
+        elif p.dim() == 1:
+            _nn.init.zeros_(p)
 
 def train_with_hp_setup(dataloaders, model, batch_size, learning_rate, no_epochs, device, criterion):
 
@@ -126,21 +152,23 @@ def main(path, args):
     '''
     # model = CNNAutoencoder(48)
     # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    # model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
-    #                                dropout=args.dropout)
-    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads,
-                               e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='gelu',
-                               output_attention=True)
+    model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+                                   dropout=args.dropout)
+    # model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads,
+    #                            e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='ELU',
+    #                            output_attention=True)
+    # model = RNNAutoencoder(62, hidden_dims=[args.embed_dim]+[args.embed_dim//(2*i) for i in range(1,args.num_layers-1)], unit_type=args.cell_type, dropout=args.dropout)
+    model.apply(apply_init)
     # options = [64, 32, 16, 8, 4]
     # hidden_dims = options[:args.num_layers]
-    # model = LSTMAutoencoder(62, hidden_dims, args.dropout)
+    # model = LSTMAutoencoder(62, args.hidden_dims, args.dropout)
     # model = Autoencoder1D()
-    # model = RNNAutoencoder(72, [16, 8, 4], "lstm")
 
     # model = RNN_DSVDD(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
     # model = CNN_DSVDD(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
-    criterion = nn.MSELoss(reduction='none')
-    # criterion = VAELoss()
+    # model = Transformer_DSVDD(input_dim=62, out_features=args.out_features, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
+    # criterion = nn.MSELoss(reduction='none')
+    criterion = VAELoss()
 
     train_losses, valid_losses, valid_loss_all, train_score = (
         train_with_hp_setup(dataloaders, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
@@ -269,7 +297,7 @@ if __name__ == "__main__":
         "--batch_size", type=int, default=32535, help="Batch size"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate"
+        "--learning_rate", type=float, default=0.00474804, help="Learning rate"
     )
     parser.add_argument(
         "--expansion_dim", type=int, default=2, help="Learning rate"
@@ -284,19 +312,19 @@ if __name__ == "__main__":
         "--init_channels", type=int, default=12, help="Learning rate"
     )
     parser.add_argument(
-        "--dropout", type=float, default=0.2, help="Learning rate"
+        "--dropout", type=float, default=0.34597, help="Learning rate"
     )
     # parser.add_argument(
     #     "--log_interval", type=int, default=1, help="Log interval"
     # )
     parser.add_argument(
-        "--embed_dim", type=int, default=50, help="Embedding dimension"
+        "--embed_dim", type=int, default=32, help="Embedding dimension"
     )
     parser.add_argument(
-        "--num_heads", type=int, default=2, help="Multihead attention heads"
+        "--num_heads", type=int, default=4, help="Multihead attention heads"
     )
     parser.add_argument(
-        "--num_layers", type=int, default=5, help="Number of endoder and decoder layers"
+        "--num_layers", type=int, default=3, help="Number of endoder and decoder layers"
     )
     parser.add_argument(
         "--preprocesing_type", type=str, default="abs_only_multichannel", help="Log interval"
@@ -325,7 +353,7 @@ if __name__ == "__main__":
             #name="all_50_complex",
             config=vars(parser.parse_args()),
             mode="online",
-            # tags=[f"{args.cell_type}"]
+            # tags=[f""]
         )
-
-    main(paths_config, args)
+    for _ in range(5):
+        main(paths_config, args)

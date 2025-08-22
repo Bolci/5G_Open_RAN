@@ -192,3 +192,26 @@ class CNN_DSVDD(base_DSVDD):
         x = x.view(x.size(0), -1)
         x = self.projection(x)
         return x
+
+class Transformer_DSVDD(base_DSVDD):
+    def init_model(self, input_dim=62, out_features=12, num_heads=2, num_layers=1, dropout=0.1):
+        self.embedding = nn.Linear(input_dim, out_features)  # Project input to out_features
+        self.positional_encoding = PositionalEncoding(out_features)
+        encoder_layers = TransformerEncoderLayer(d_model=out_features, nhead=num_heads, dropout=dropout, batch_first=True)
+        self.transformer_encoder = TransformerEncoder(encoder_layers, num_layers=num_layers)
+        self.projection = nn.Linear(out_features, out_features)  # Project to latent space
+    def forward(self, x):
+        """
+        Forward pass of the Transformer_DSVDD model.
+        Args:
+            x: Input tensor of shape [batch, seq_len, input_dim]
+        Returns:
+            Output tensor of shape [batch, out_features]
+        """
+        x = self.embedding(x)  # Project to out_features
+        x = self.positional_encoding(x)  # Add positional encoding
+        x = self.transformer_encoder(x)
+        # Take the mean over the sequence length dimension
+        x = torch.mean(x, dim=1)
+        x = self.projection(x)
+        return x
