@@ -101,6 +101,40 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
         ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='red',
                   label='Normalized Histogram valid class 1')
 
+    fig2, ax2 = plt.subplots(2, 1, figsize=(5, 10))
+    ax2[0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
+              label='Validation set')
+    ax2[0].set_title('Validation Set')
+    ax2[0].set_ylim([0, 0.5])
+    ax2[0].legend()
+    ax2[0].grid(True)
+    ax2[0].set_xlabel('Anomaly Score')
+    ax2[0].set_ylabel('Density')
+    ax2[1].axis('off')
+    ax2[1].axis('off')
+
+    # add decision line
+    if decision_lines is not None:
+        for tester_name, bounds in decision_lines:
+            if "min_max" in tester_name:
+                label = "Min-Max"
+                color = "g"
+            elif "std" in tester_name:
+                label = "STD"
+                color = "y"
+            elif "mad" in tester_name:
+                label = "MAD"
+                color = "m"
+            else:
+                label = "Unknown"
+                color = "k"
+            if bounds[0] is not None and bounds[1] is not None:
+                ax2[0].axvline(x=bounds[0], color=color, linestyle='--', label=f"{label}-lower bound")
+                ax2[0].axvline(x=bounds[1], color=color, linestyle='--', label=f"{label}-upper bound")
+    # fig2.suptitle("Error distributions")
+    fig2.tight_layout()
+    plt.close(fig2)
+    subfigs = [fig2]
 
     # add decision line
     if decision_lines is not None:
@@ -128,7 +162,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     ax[0, 0].grid(True)
 
 
-    subfigs = []
+    # subfigs = []
     for id_dataset, dataset_score in enumerate(test_predictions):
         class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
         ax[0, id_dataset+1].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
@@ -243,7 +277,7 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
                 cell.set_width(0.15)
         ax2[1].axis('off')
         ax2[1].axis('off')
-        fig2.suptitle("Error distributions")
+        # fig2.suptitle("Error distributions")
         fig2.tight_layout()
         plt.close(fig2)
         subfigs.append(fig2)
@@ -254,5 +288,145 @@ def get_distribution_plot(valid_predictions, test_predictions, performance, metr
     plt.close(fig)
 
     return fig, subfigs
+
+
+
+def get_distribution_plot_for_paper(valid_predictions, test_predictions, performance, metrics_buffer, decision_lines, plot_names):
+    """
+    Generates a distribution plot for the validation and test predictions.
+    Args:
+
+
+    """
+    no_datasets_test = len(test_predictions)
+
+    min_bin, max_bin = get_global_min_max(valid_predictions, test_predictions)
+    tst = list(test_predictions[0].keys())[0]
+    class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(valid_predictions, min_bin, max_bin)
+    import math
+    fig, ax = plt.subplots(4,math.ceil((no_datasets_test+1)/2), figsize=(5*(no_datasets_test+1)//1.5, 20), squeeze=True,
+                       gridspec_kw = {'height_ratios':[1,.5, 1, .5]})
+    ax[0, 0].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
+              label='Normal samples')
+    # if len(class_1_parameters[1]) > 0:
+    #     ax[0, 0].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='red',
+    #               label='Normalized Histogram valid class 1')
+
+
+    # add decision line
+    if decision_lines is not None:
+        for tester_name, bounds in decision_lines:
+            if "min_max" in tester_name:
+                label = "Min-Max"
+                color = "g"
+            elif "std" in tester_name:
+                label = "STD"
+                color = "y"
+            elif "mad" in tester_name:
+                label = "MAD"
+                color = "m"
+            else:
+                label = "Unknown"
+                color = "k"
+            if bounds[0] is not None and bounds[1] is not None:
+                ax[0, 0].axvline(x=bounds[0], color=color, linestyle='--', label=f"{label}-lower bound")
+                ax[0, 0].axvline(x=bounds[1], color=color, linestyle='--', label=f"{label}-upper bound")
+    ax[0, 0].set_title('Validation set')
+    ax[0, 0].set_xlabel('Anomaly Score')
+    ax[0, 0].set_ylabel('Density')
+    # ax[0, 0].legend()
+    ax[0, 0].set_ylim([0,1])
+    ax[0, 0].grid(True)
+
+    fig_rows = 2
+    per_row_figs = math.ceil((no_datasets_test + 1) / fig_rows)
+    for id_dataset, dataset_score in enumerate(test_predictions):
+
+        if id_dataset + 1 < per_row_figs:
+            row_index = 0
+        elif per_row_figs <= (id_dataset + 1) < 2 * per_row_figs:
+            row_index = 2
+        else:
+            row_index = 4
+        if id_dataset + 1 < per_row_figs:
+            column_index = id_dataset + 1
+        elif per_row_figs <= (id_dataset + 1) < 2 * per_row_figs:
+            column_index = id_dataset + 1 - per_row_figs
+        else:
+            if row_index == 2:
+                column_index = id_dataset - per_row_figs
+            else:
+                column_index = id_dataset+1 - per_row_figs * 2
+
+
+        class_0_parameters, class_1_parameters = get_norm_scores_per_dataset(dataset_score[tst], min_bin, max_bin)
+        ax[row_index, column_index].bar(class_0_parameters[2][:-1], class_0_parameters[1], width=class_0_parameters[0], alpha=0.5, color='b',
+              label='Normal samples')
+        ax[row_index, column_index].bar(class_1_parameters[2][:-1], class_1_parameters[1], width=class_1_parameters[0], alpha=0.5, color='r',
+              label='Anomalous samples')
+
+        # add decision line
+        if decision_lines is not None:
+            for tester_name, bounds in decision_lines:
+                if "min_max" in tester_name:
+                    label = "Min-Max"
+                    color = "g"
+                elif "std" in tester_name:
+                    label = "STD"
+                    color = "y"
+                elif "mad" in tester_name:
+                    label = "MAD"
+                    color = "m"
+                else:
+                    label = "Unknown"
+                    color = "k"
+                if bounds[0] is not None and bounds[1] is not None:
+                    ax[row_index, column_index].axvline(x=bounds[0],color=color, linestyle='--', label=f"{label}-lower bound")
+                    ax[row_index, column_index].axvline(x=bounds[1],color=color, linestyle='--', label=f"{label}-upper bound")
+
+
+        ax[row_index, column_index].set_ylim([0,1])
+        # ax[row_index, column_index].legend()
+        ax[row_index, column_index].grid(True)
+        ax[row_index, column_index].set_xlabel('Anomaly Score')
+        ax[row_index, column_index].set_ylabel('Density')
+
+
+        scores = ""
+        for value in performance[id_dataset].values():
+            scores += f"{value:.3f}, "
+        ax[row_index, column_index].set_title(f'{plot_names[id_dataset]}')
+
+        # Add table with metrics below the graph
+        table_data = []
+        for key, metrics in metrics_buffer[id_dataset].items():
+            value = [f"{value:.3f}" for value in metrics]
+            table_data.append([key] + value)
+        # table_data = [[key, f"{value}"] for key, values in metrics_buffer[id_dataset].items()]
+        table = ax[row_index+1, column_index].table(cellText=table_data, colLabels=["Estim.","Accur.", "Prec.", "Recall", "F1"], loc='center')
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        table.scale(1.4, 1.4)  # Increase the width of the first column
+        for key, cell in table.get_celld().items():
+            if key[1] == 0:  # First column
+                cell.set_width(0.5)
+            else:
+                cell.set_width(0.15)
+        ax[row_index+1, column_index].axis('off')
+        ax[row_index+1, 0].axis('off')
+
+    fig.tight_layout()
+    handles, labels = ax[0, 1].get_legend_handles_labels()
+    fig.legend(
+        handles, labels,
+        loc='center',  # center relative to bbox
+        bbox_to_anchor=(0.5, .03),  # (x,y) in figure coords
+        fontsize=14,
+        ncol=len(labels),  # put all labels next to each other
+        frameon=False  # optional: no box
+    )
+    ax[-1, -1].axis('off')
+    # ax[-2, -1].axis('off')
+    return fig
 
 

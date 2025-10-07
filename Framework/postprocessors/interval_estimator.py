@@ -123,7 +123,7 @@ class IntervalEstimatorStd(PostprocessorGeneral):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.std_val_threshold = 1
+        self.std_val_threshold = 4.0
 
     
     def metric_function_std(self, batch_of_samples: float) -> int:
@@ -256,7 +256,7 @@ class IntervalEstimatorMAD(PostprocessorGeneral):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.mad_val_threshold = 1.0
+        self.mad_val_threshold = 4.0
 
     def metric_function_mad(self, batch_of_samples: float) -> int:
         """

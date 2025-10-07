@@ -14,11 +14,11 @@ from Framework.models.transformer_vae import TransformerVAE
 from Framework.models.anomaly_transformer import AnomalyTransformer
 from Framework.models.autoencoder_cnn1d import Autoencoder1D
 from Framework.models.autoencoder_rnn import RNNAutoencoder
-from Framework.models.LSTM_VAE import TemporalVAE
+# from Framework.models.LSTM_VAE import TemporalVAE
 from Framework.models.DSVDD import RNN_DSVDD, CNN_DSVDD, Transformer_DSVDD
 from Framework.postprocessors.postprocessor_functions import plot_data_by_labels, mean_labels_over_epochs
 from Framework.postprocessors.tester import Tester, TesterV2
-from Framework.postprocessors.graph_worker import get_distribution_plot
+from Framework.postprocessors.graph_worker import get_distribution_plot, get_distribution_plot_for_paper
 import os
 import torch
 import matplotlib.pyplot as plt
@@ -152,11 +152,11 @@ def main(path, args):
     '''
     # model = CNNAutoencoder(48)
     # model = TransformerAutoencoder(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
-                                   dropout=args.dropout)
-    # model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads,
-    #                            e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='ELU',
-    #                            output_attention=True)
+    # model = TransformerVAE(input_dim=62, embed_dim=args.embed_dim, num_heads=args.num_heads, num_layers=args.num_layers,
+    #                                dropout=args.dropout)
+    model = AnomalyTransformer(48, enc_in=62, c_out=62, d_model=args.embed_dim, n_heads=args.num_heads,
+                               e_layers=args.num_layers, d_ff=None, dropout=args.dropout, activation='ELU',
+                               output_attention=True)
     # model = RNNAutoencoder(62, hidden_dims=[args.embed_dim]+[args.embed_dim//(2*i) for i in range(1,args.num_layers-1)], unit_type=args.cell_type, dropout=args.dropout)
     model.apply(apply_init)
     # options = [64, 32, 16, 8, 4]
@@ -167,8 +167,8 @@ def main(path, args):
     # model = RNN_DSVDD(input_dim=62, hidden_dim=args.embed_dim, num_layers=args.num_layers, dropout=args.dropout, cell_type=args.cell_type)
     # model = CNN_DSVDD(input_dim=62, out_features=args.out_features, num_channels=args.num_channels, kernel_size=args.kernel_size, dropout=args.dropout)
     # model = Transformer_DSVDD(input_dim=62, out_features=args.out_features, num_heads=args.num_heads, num_layers=args.num_layers, dropout=args.dropout)
-    # criterion = nn.MSELoss(reduction='none')
-    criterion = VAELoss()
+    criterion = nn.MSELoss(reduction='none')
+    # criterion = VAELoss()
 
     train_losses, valid_losses, valid_loss_all, train_score = (
         train_with_hp_setup(dataloaders, model, args.batch_size, args.learning_rate, args.epochs, device, criterion))
@@ -254,7 +254,10 @@ def main(path, args):
     predictions_buffer = []
     performance = []
     metrics_buffer = []
+    from copy import deepcopy
+    tester_backup = deepcopy(tester)
     for id_dat, single_test_dataset in enumerate(dataloaders['Test']):
+        tester = deepcopy(tester_backup)
         testing_loop = lambda class_metric: test_loop(single_test_dataset, model, criterion, class_metric, device=device)
         test_scores, predictions, metrics = tester.test_data(testing_loop=testing_loop)
         print("=============================")
@@ -273,11 +276,18 @@ def main(path, args):
     for single_tester_name, single_tester in tester.tester_buffer.items():
         decision_lines.append((single_tester_name, single_tester.get_decision_lines()))
 
-    plot_names = path["Test_folders"]
+    # plot_names = path["Test_folders"]
+    plot_names = [f"Scenario {i+1}" for i in range(len(path["Test_folders"])-1)]
+    plot_names.append("All scenarios combined")
     fig_distribution, subfigures = get_distribution_plot(valid_loss_all[-1,:,:], predictions_buffer, performance, metrics_buffer, decision_lines, plot_names)
+
+    paper_fig = get_distribution_plot_for_paper(valid_loss_all[-1,:,:], predictions_buffer, performance, metrics_buffer, decision_lines, plot_names)
 
     graph_valid_test_distribution = os.path.join(saving_path, 'error_distribution.png')
     fig_distribution.savefig(graph_valid_test_distribution)
+
+    paper_fig_path = os.path.join(saving_path, 'paper_distribution.png')
+    paper_fig.savefig(paper_fig_path)
     for i, fig in enumerate(subfigures):
         graph_valid_test_distribution_separated = os.path.join(saving_path, f"error_distribution_test{i}.png")
         fig.savefig(graph_valid_test_distribution_separated)
@@ -345,15 +355,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # os.environ["WANDB_SILENT"] = "true"
-    if args.wandb_log:
-        wandb.init(
-            project="Anomaly_detection",
-            entity="OPEN_5G_RAN_team",
-            #name="all_50_complex",
-            config=vars(parser.parse_args()),
-            mode="online",
-            # tags=[f""]
-        )
-    for _ in range(5):
+    run_for = 1
+    for _ in range(run_for):
+
+        # os.environ["WANDB_SILENT"] = "true"
+        if args.wandb_log:
+            wandb.init(
+                project="Anomaly_detection",
+                entity="OPEN_5G_RAN_team",
+                #name="all_50_complex",
+                config=vars(parser.parse_args()),
+                mode="online",
+                # tags=[f"idk whats going on v4"]
+            )
         main(paths_config, args)
